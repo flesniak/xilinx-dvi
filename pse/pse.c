@@ -19,10 +19,10 @@ Uns32 initDisplay(Uns32 vmemBaseAddr) {
   return 0;
 }
 
-Uns32 drawDisplay() {
+/*Uns32 drawDisplay() {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : drawDisplay(Uns64)");
   return 0;
-}
+}*/
 
 void closeDisplay() {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : closeDisplay(Uns64)");
@@ -43,11 +43,12 @@ PPM_CONSTRUCTOR_CB(constructor) {
   else
     bhmMessage("F", "XPS_PSE", "Failed to initialize display");
 
-  while( success ) {
+  /*while( success ) {
     bhmWaitDelay(1000000/TARGET_FPS);
     bhmMessage("I", "XPS_PSE", "Redrawing display drawDisplay()");
     success = drawDisplay();
-  }
+  }*/
+  bhmWaitEvent(bhmGetSystemEvent(BHM_SE_END_OF_SIMULATION) );
 }
 
 PPM_WRITE_CB(vmemChange) {

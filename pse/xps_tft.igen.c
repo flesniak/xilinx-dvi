@@ -62,7 +62,7 @@ static void installSlavePorts(void) {
         bhmMessage("E", "PPM_SPNC", "Could not connect port 'VMEMBUS'");
     }
 
-    ppmInstallChangeCallback(vmemChange, (void*)0x0, handles.VMEMBUS+0x0, 0x400000);
+    //ppmInstallChangeCallback(vmemChange, (void*)0x0, handles.VMEMBUS+0x0, 0x400000);
 }
 
 //////////////////////////// Memory mapped registers ///////////////////////////

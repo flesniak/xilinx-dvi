@@ -148,7 +148,7 @@ int main( int argc, char** argv ) {
     icmAddPseInterceptObject( dvi, "dvi", "/home/lesniak/ovp/xilinx-dvi/model/model.so", 0, 0);
 
     //set wall clock factor to 1 for correct delay function behaviour
-    icmSetWallClockFactor(1);
+    //icmSetWallClockFactor(1);
   } else if( options.memorySize != UINT_MAX ) {
     icmBusP bus1 = icmNewBus( "bus1", 32 );
     icmMemoryP mem1 = icmNewMemory( "mem1", ICM_PRIV_RWX, options.memorySize * 1024 * 1024 - 1 );

@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <SDL.h>
+#include <pthread.h>
 
 #include <vmi/vmiMessage.h>
 #include <vmi/vmiTypes.h>
@@ -21,6 +23,8 @@ typedef struct vmiosObjectS {
   SDL_Surface* surface;
   SDL_Surface* tftSurface;
   Uns32 vmemBaseAddr;
+  pthread_t redrawThread;
+  int redrawThreadState;
 } vmiosObject;
 
 static void getArg(vmiProcessorP processor, vmiosObjectP object, Uns32 *index, void* result, Uns32 argSize) {
@@ -40,6 +44,19 @@ inline static void retArg(vmiProcessorP processor, vmiosObjectP object, void *re
   vmirtRegWrite(processor, object->resultHigh, &arg);
 }
 
+static void* drawDisplay(void* objectV) {
+  vmiosObjectP object = (vmiosObjectP)objectV;
+  object->redrawThreadState = 1; //thread is running
+  while( object->redrawThreadState == 1 ) {
+    if( SDL_BlitSurface(object->tftSurface, 0, object->surface, 0) )
+      vmiMessage("W", "TFT_SH", "Surface blit failed");
+    SDL_UpdateRect(object->surface, 0, 0, 0, 0);
+    usleep(1000000/DVI_TARGET_FPS);
+  }
+  object->redrawThreadState = 0; //thread is stopped
+  pthread_exit(0);
+}
+
 static VMIOS_INTERCEPT_FN(initDisplay) {
   Uns32 index = 0;
   GET_ARG(processor, object, index, object->vmemBaseAddr);
@@ -54,17 +71,24 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   SDL_UpdateRect(object->surface, 0, 0, 0, 0);
 
   //create a surface matching the pixel format of the xilinx tft controller
-  object->tftSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, 640, 480, 32, 0x00003f00, 0x003f0000, 0x3f000000, 0);
+  object->tftSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, 1024, 512, 32, 0x00003f00, 0x003f0000, 0x3f000000, 0);
   if( !object->tftSurface )
     vmiMessage("F", "TFT_SH", "Couldn't initialize tft surface: %s\n", SDL_GetError());
   SDL_FillRect(object->tftSurface, 0, SDL_MapRGB(object->tftSurface->format, 0, 0, 0));
   SDL_UpdateRect(object->tftSurface, 0, 0, 0, 0);
 
+  //map native memory (tftSurface pixel storage) into the pse memory domain
+  memDomainP domain = vmirtGetProcessorDataDomain(processor);
+  if( !vmirtMapNativeMemory(domain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, object->tftSurface->pixels) )
+  	vmiMessage("F", "TFT_SH", "Failed to map native vmem");
+
+  pthread_create(&object->redrawThread, 0, drawDisplay, (void*)object);
+
   Uns32 success = 1;
   retArg(processor, object, &success); //return success
 }
 
-void surfDump(SDL_Surface* surf, unsigned int n) {
+/*void surfDump(SDL_Surface* surf, unsigned int n) {
   while( n%4 )
     n++;
   printf("Surface dump first %d bytes:", n);
@@ -76,19 +100,22 @@ void surfDump(SDL_Surface* surf, unsigned int n) {
         ((unsigned char*)surf->pixels)[i+2],
         ((unsigned char*)surf->pixels)[i+3]);
   printf("\n");
-}
+}*/
 
-static VMIOS_INTERCEPT_FN(drawDisplay) {
+/*static VMIOS_INTERCEPT_FN(drawDisplay) {
+  //memDomainP domain = vmirtGetProcessorDataDomain(processor);
+  //(domain, object->vmemBaseAddr, object->tftSurface->pixels, 1024*512*4, 0, True);
   if( SDL_BlitSurface(object->tftSurface, 0, object->surface, 0) )
     vmiMessage("W", "TFT_SH", "Surface blit failed");
   SDL_UpdateRect(object->surface, 0, 0, 0, 0);
-}
+}*/
 
-static VMIOS_INTERCEPT_FN(updateVmem) {
+/*static VMIOS_INTERCEPT_FN(updateVmem) {
   Uns32 updateBase = 0, updateSize = 0, index = 0;
   GET_ARG(processor, object, index, updateBase);
   GET_ARG(processor, object, index, updateSize);
 
+  //resized tftSurface to vmem size, thus we do not need to strip out the vmem hole
   const Uns32 offset = updateBase-object->vmemBaseAddr;
   const Uns32 y = offset / 4096; //offset in scanlines (pitch = BytesPerPixel*xResolution)
   const Uns32 x = (offset % 4096); //offset in bytes (4 BytesPerPixel)
@@ -96,14 +123,14 @@ static VMIOS_INTERCEPT_FN(updateVmem) {
   if( x > 640*4-1 || y > 479 ) {
     vmiMessage("W", "TFT_SH", "Write to vmem out of 640x480 bounds occured, discarding (x %d y %d offset %d)\n", x/4, y, surfaceOffset);
     return;
-  } /*else
-    vmiMessage("I", "TFT_SH", "pixel data written to x %d y %d (offset %d)\n", x, y, surfaceOffset);*/
+  } else
+    vmiMessage("I", "TFT_SH", "pixel data written to x %d y %d (offset %d)\n", x, y, surfaceOffset);
 
   memDomainP domain = vmirtGetProcessorDataDomain(processor);
   SDL_LockSurface(object->surface);
-  vmirtReadNByteDomain(domain, updateBase, object->tftSurface->pixels+surfaceOffset, updateSize, 0, True);
+  vmirtReadNByteDomain(domain, updateBase, object->tftSurface->pixels, updateSize, 0, True);
   SDL_UnlockSurface(object->surface);
-}
+}*/
 
 static VMIOS_CONSTRUCTOR_FN(constructor) {
   vmiMessage("I" ,"TFT_SH", "Constructing");
@@ -119,10 +146,17 @@ static VMIOS_CONSTRUCTOR_FN(constructor) {
   object->resultLow = vmirtGetRegByName(processor, "eax");
   object->resultHigh = vmirtGetRegByName(processor, "edx");
   object->stackPointer = vmirtGetRegByName(processor, "esp");
+
+  //set redrawThreadState = 0 (0 = not running, 1 = running, 2 = stop when possible)
+  object->redrawThreadState = 0;
 }
 
 static VMIOS_CONSTRUCTOR_FN(destructor) {
   vmiMessage("I" ,"TFT_SH", "Shutting down");
+  object->redrawThreadState = 2; //set stop condition
+  pthread_join(object->redrawThread, 0);
+  SDL_FreeSurface(object->tftSurface);
+  SDL_FreeSurface(object->surface);
 }
 
 vmiosAttr modelAttrs = {
@@ -143,8 +177,8 @@ vmiosAttr modelAttrs = {
     // -------------------          -------- ------  -----------------
     .intercepts = {
         {"initDisplay",             0,       True,   initDisplay            },
-        {"drawDisplay",             0,       True,   drawDisplay            },
-        {"updateVmem",              0,       True,   updateVmem             },
+        //{"drawDisplay",             0,       True,   drawDisplay            },
+        //{"updateVmem",              0,       True,   updateVmem             },
         {0}
     }
 };
