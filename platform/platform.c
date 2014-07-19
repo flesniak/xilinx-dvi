@@ -17,8 +17,9 @@ static struct optionsS {
   unsigned int memorySize; //MiB
   int instructionCount;
   int display;
+  double wallclockFactor;
   char* program;
-} options = { 1, ICM_ATTR_DEFAULT, UINT_MAX, INSTRUCTION_COUNT_DEFAULT, 0, 0 };
+} options = { 1, ICM_ATTR_DEFAULT, UINT_MAX, INSTRUCTION_COUNT_DEFAULT, 0, 0, 0 };
 
 void usage( char* argv0 ) {
   fprintf( stderr, "Usage: %s [-v] [-t simple|count|regs] [-m memsize|-d] [-i instructions] <program.elf>\n", argv0 );
@@ -26,6 +27,7 @@ void usage( char* argv0 ) {
   fprintf( stderr, "  -t simple|count|regs | enable instruction tracing, with instruction cound or register dump\n" );
   fprintf( stderr, "  -m memsize           | attach a memory of size memsize instead of the implicite one\n" );
   fprintf( stderr, "  -i instructions      | simulate instructions at once (default 100000)\n" );
+  fprintf( stderr, "  -w factor            | set wallclock factor \n" );
   fprintf( stderr, "  -d                   | enable dvi display\n" );
   fprintf( stderr, "  <program.elf>        | program file to simulate\n" );
   exit( 1 );
@@ -35,7 +37,7 @@ void parseOptions( int argc, char** argv ) {
   int c;
   opterr = 0;
 
-  while( ( c = getopt( argc, argv, "vt:m:i:d" ) ) != -1 )
+  while( ( c = getopt( argc, argv, "vt:m:i:w:d" ) ) != -1 )
     switch( c ) {
       case 'v':
         options.verbosity++;
@@ -71,6 +73,13 @@ void parseOptions( int argc, char** argv ) {
         sscanf( optarg, "%d", &options.instructionCount );
         if( !options.instructionCount ) {
           fprintf( stderr, "Invalid argument to option -i.\n" );
+          usage( argv[0] );
+        }
+        break;
+      case 'w':
+        sscanf( optarg, "%lf", &options.wallclockFactor );
+        if( !options.wallclockFactor ) {
+          fprintf( stderr, "Invalid argument to option -w.\n" );
           usage( argv[0] );
         }
         break;
@@ -147,14 +156,15 @@ int main( int argc, char** argv ) {
     //load semihost library
     icmAddPseInterceptObject( dvi, "dvi", "/home/lesniak/ovp/xilinx-dvi/model/model.so", 0, 0);
 
-    //set wall clock factor to 1 for correct delay function behaviour
-    //icmSetWallClockFactor(1);
   } else if( options.memorySize != UINT_MAX ) {
     icmBusP bus1 = icmNewBus( "bus1", 32 );
     icmMemoryP mem1 = icmNewMemory( "mem1", ICM_PRIV_RWX, options.memorySize * 1024 * 1024 - 1 );
     icmConnectProcessorBusses( processor1, bus1, bus1 );
     icmConnectMemoryToBus( bus1, "port1", mem1, 0 );
   }
+
+  if( options.wallclockFactor )
+    icmSetWallClockFactor(options.wallclockFactor);
 
   icmLoadProcessorMemory(processor1, options.program, ICM_LOAD_DEFAULT, False, True);
 
