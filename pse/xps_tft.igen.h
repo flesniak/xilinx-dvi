@@ -4,7 +4,7 @@
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
 //                             Version 20131018.0
-//                          Thu Jul  3 14:40:50 2014
+//                          Tue Jul 22 14:36:17 2014
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -59,27 +59,23 @@ typedef struct BUS0_AB0_dataS {
     } CCR;
 } BUS0_AB0_dataT, *BUS0_AB0_dataTP;
 
-typedef struct VMEMBUS_VMEMAB_dataS { 
-} VMEMBUS_VMEMAB_dataT, *VMEMBUS_VMEMAB_dataTP;
-
 /////////////////////////////// Port Declarations //////////////////////////////
 
 extern BUS0_AB0_dataT BUS0_AB0_data;
-
-extern VMEMBUS_VMEMAB_dataT VMEMBUS_VMEMAB_data;
 
 #ifdef _PSE_
 ///////////////////////////////// Port handles /////////////////////////////////
 
 typedef struct handlesS {
     void                 *BUS0;
-    void                 *VMEMBUS;
 } handlesT, *handlesTP;
 
 extern handlesT handles;
 
 ////////////////////////////// Callback prototypes /////////////////////////////
 
+PPM_REG_READ_CB(readReg);
+PPM_REG_WRITE_CB(writeReg);
 PPM_CONSTRUCTOR_CB(periphConstructor);
 PPM_DESTRUCTOR_CB(periphDestructor);
 PPM_CONSTRUCTOR_CB(constructor);

@@ -8,13 +8,18 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "byteswap.h"
 #include "peripheral/bhm.h"
 
 #include "xps_tft.igen.h"
 
+#include "../dvi-mem.h"
+
+typedef _Bool bool;
+
 #define TARGET_FPS 25
 
-Uns32 initDisplay(Uns32 vmemBaseAddr) {
+Uns32 initDisplay() {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : initDisplay()");
   return 0;
 }
@@ -28,20 +33,89 @@ void closeDisplay() {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : closeDisplay(Uns64)");
 }
 
-void updateVmem(Uns32 baseAddress, Uns32 size) {
+/*void updateVmem(Uns32 baseAddress, Uns32 size) {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : updateVmem(Uns32,Uns32)");
+}*/
+
+void configureDisplay(bool enable, bool scanDirection) {
+    bhmMessage("F", "TFT_PSE", "Failed to intercept : configureDisplay()");
+}
+
+void mapExternalVmem(Uns32 baseAddress) {
+  bhmMessage("F", "TFT_PSE", "Failed to intercept : mapExternalVmem(Uns32)");
+}
+
+PPM_REG_READ_CB(readReg) {
+  Uns32 reg = (Uns32)user;
+  switch( reg ) {
+    case 0 : //address register
+      bhmMessage("I", "TFT_PSE", "Read from address register for %d bytes at 0x%08x", bytes, (Uns32)addr);
+      return BUS0_AB0_data.AR.value;
+      break;
+    case 1 : //control register
+      bhmMessage("I", "TFT_PSE", "Read from control register for %d bytes at 0x%08x", bytes, (Uns32)addr);
+      return BUS0_AB0_data.CR.value;
+      break;
+    case 2 : //interrupt enable & status register
+      bhmMessage("I", "TFT_PSE", "Read from interrupt register for %d bytes at 0x%08x", bytes, (Uns32)addr);
+      return BUS0_AB0_data.IESR.value; //TODO either update IESR.value from withing semihost or request vsync state from semihost
+      break;
+    case 3 : //chrontel chip register
+      bhmMessage("W", "TFT_PSE", "Unhandled read from CCR: addr 0x%08x %d bytes", (Uns32)addr, bytes);
+      return BUS0_AB0_data.CCR.value;
+      break;
+    default:
+      bhmMessage("W", "TFT_PSE", "Invalid uder data on readReg\n");
+  }
+
+  return 0;
+}
+
+PPM_REG_WRITE_CB(writeReg) {
+  //TODO handle big endian? has to be converted because pse runs on native host platform
+  Uns32 reg = (Uns32)user;
+  switch( reg ) {
+    case 0 : //address register
+      bhmMessage("I", "TFT_PSE", "VRAM address change to 0x%08x requested, remapping", data);
+      BUS0_AB0_data.AR.value = data;
+      mapExternalVmem(data);
+      break;
+    case 1 : //control register
+      bhmMessage("I", "TFT_PSE", "Write to control register for %d bytes at 0x%08x data 0x%08x", bytes, (Uns32)addr, data);
+      configureDisplay(data & 1, data >> 1 & 1);
+      BUS0_AB0_data.CR.value = data;
+      break;
+    case 2 : //interrupt enable & status register
+      BUS0_AB0_data.IESR.value = data;
+      break;
+    case 3 : //chrontel chip register
+      bhmMessage("W", "TFT_PSE", "Unhandled write to CCR: addr 0x%08x data 0x%08x", (Uns32)addr, data);
+      BUS0_AB0_data.CCR.value = data;
+      break;
+    default:
+      bhmMessage("W", "TFT_PSE", "Invalid uder data on writeReg\n");
+  }
 }
 
 PPM_CONSTRUCTOR_CB(constructor) {
   bhmMessage("I", "TFT_PSE", "Constructing");
   periphConstructor();
 
-  bhmMessage("I", "XPS_PSE", "Initializing display initDisplay()");
-  Uns32 success = initDisplay((Uns32)handles.VMEMBUS);
+  bool endianess = bhmBoolAttribute("bigEndianGuest");
+  bhmMessage("I", "TFT_PSE", "Initializing display initDisplay()");
+  Uns32 success = initDisplay(endianess);
   if( success )
-    bhmMessage("I", "XPS_PSE", "Display initialized successfully");
+    bhmMessage("I", "TFT_PSE", "Display initialized successfully");
   else
-    bhmMessage("F", "XPS_PSE", "Failed to initialize display");
+    bhmMessage("F", "TFT_PSE", "Failed to initialize display");
+
+  if( endianess )
+    BUS0_AB0_data.AR.value = bswap_32(DVI_VMEM_ADDRESS);
+  else
+    BUS0_AB0_data.AR.value = DVI_VMEM_ADDRESS;
+  //ppmExposeLocalBus("VMEMBUS", DVI_VMEM_ADDRESS, DVI_VMEM_SIZE, 0);
+  //ppmCreateDynamicSlavePort("VMEMBUS", DVI_VMEM_ADDRESS, DVI_VMEM_SIZE, 0);
+  //mapExternalVmem(BUS0_AB0_data.AR.value);
 
   /*while( success ) {
     bhmWaitDelay(1000000/TARGET_FPS);
@@ -51,10 +125,11 @@ PPM_CONSTRUCTOR_CB(constructor) {
   bhmWaitEvent(bhmGetSystemEvent(BHM_SE_END_OF_SIMULATION) );
 }
 
-PPM_WRITE_CB(vmemChange) {
+/*PPM_WRITE_CB(vmemChange) {
   updateVmem((Uns32)addr, bytes);
-}
+}*/
 
 PPM_DESTRUCTOR_CB(destructor) {
   bhmMessage("I", "TFT_PSE", "Destructing");
 }
+

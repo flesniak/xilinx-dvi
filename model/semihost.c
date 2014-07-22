@@ -1,6 +1,8 @@
 // Xilinx XPS TFT Controller
 // Semihost part, handles intercepts
 
+#include <byteswap.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +27,7 @@ typedef struct vmiosObjectS {
   Uns32 vmemBaseAddr;
   pthread_t redrawThread;
   int redrawThreadState;
+  bool bigEndianGuest;
 } vmiosObject;
 
 static void getArg(vmiProcessorP processor, vmiosObjectP object, Uns32 *index, void* result, Uns32 argSize) {
@@ -44,10 +47,25 @@ inline static void retArg(vmiProcessorP processor, vmiosObjectP object, void *re
   vmirtRegWrite(processor, object->resultHigh, &arg);
 }
 
+void surfDump(SDL_Surface* surf, unsigned int n) {
+  while( n%4 )
+    n++;
+  printf("Surface dump first %d bytes:", n);
+  unsigned int i;
+  for(i=0; i<n; i+=4)
+    printf(" 0x%02x%02x%02x%02x",
+           ((unsigned char*)surf->pixels)[i],
+           ((unsigned char*)surf->pixels)[i+1],
+           ((unsigned char*)surf->pixels)[i+2],
+           ((unsigned char*)surf->pixels)[i+3]);
+  printf("\n");
+}
+
 static void* drawDisplay(void* objectV) {
   vmiosObjectP object = (vmiosObjectP)objectV;
   object->redrawThreadState = 1; //thread is running
   while( object->redrawThreadState == 1 ) {
+    surfDump(object->tftSurface, 64);
     if( SDL_BlitSurface(object->tftSurface, 0, object->surface, 0) )
       vmiMessage("W", "TFT_SH", "Surface blit failed");
     SDL_UpdateRect(object->surface, 0, 0, 0, 0);
@@ -57,9 +75,11 @@ static void* drawDisplay(void* objectV) {
   pthread_exit(0);
 }
 
+//void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 newVmemAddress);
+
 static VMIOS_INTERCEPT_FN(initDisplay) {
   Uns32 index = 0;
-  GET_ARG(processor, object, index, object->vmemBaseAddr);
+  GET_ARG(processor, object, index, object->bigEndianGuest);
 
   if( SDL_Init(SDL_INIT_VIDEO) )
     vmiMessage("F", "TFT_SH", "Couldn't initialize SDL: %s\n", SDL_GetError());
@@ -78,9 +98,12 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   SDL_UpdateRect(object->tftSurface, 0, 0, 0, 0);
 
   //map native memory (tftSurface pixel storage) into the pse memory domain
-  memDomainP domain = vmirtGetProcessorDataDomain(processor);
+  /*memDomainP domain = vmirtGetProcessorDataDomain(processor);
   if( !vmirtMapNativeMemory(domain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, object->tftSurface->pixels) )
-  	vmiMessage("F", "TFT_SH", "Failed to map native vmem");
+  	vmiMessage("F", "TFT_SH", "Failed to map native vmem");*/
+  //object->vmemBaseAddr = 0;
+  //mapExternalVmemLocal(processor, object, DVI_VMEM_ADDRESS);
+  //PSE initiates vmem mapping
 
   pthread_create(&object->redrawThread, 0, drawDisplay, (void*)object);
 
@@ -88,19 +111,35 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   retArg(processor, object, &success); //return success
 }
 
-/*void surfDump(SDL_Surface* surf, unsigned int n) {
-  while( n%4 )
-    n++;
-  printf("Surface dump first %d bytes:", n);
-  unsigned int i;
-  for(i=0; i<n; i+=4)
-    printf(" 0x%02x%02x%02x%02x",
-        ((unsigned char*)surf->pixels)[i],
-        ((unsigned char*)surf->pixels)[i+1],
-        ((unsigned char*)surf->pixels)[i+2],
-        ((unsigned char*)surf->pixels)[i+3]);
-  printf("\n");
-}*/
+static VMIOS_INTERCEPT_FN(configureDisplay) {
+  Uns32 enable = 0, scanDirection = 0, index = 0;
+  GET_ARG(processor, object, index, enable);
+  GET_ARG(processor, object, index, scanDirection);
+  if( object->bigEndianGuest )
+    object->bigEndianGuest = bswap_32(object->bigEndianGuest);
+  vmiMessage("W", "TFT_SH", "configureDisplay unimplemented");
+}
+
+void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 newVmemAddress) {
+  vmiMessage("I", "TFT_SH", "Mapping external vmem (new addr 0x%08x, old addr 0x%08x)", newVmemAddress, object->vmemBaseAddr);
+  memDomainP domain = vmirtGetProcessorDataDomain(processor);
+  if( object->vmemBaseAddr )
+    vmirtUnaliasMemory(domain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1);
+  //vmirtMapMemory(domain, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1, MEM_RAM);
+  if( !vmirtMapNativeMemory(domain, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1, object->tftSurface->pixels) )
+  	vmiMessage("F", "TFT_SH", "Failed to map native vmem (new addr 0x%08x, old addr 0x%08x)", newVmemAddress, object->vmemBaseAddr);
+  else
+    object->vmemBaseAddr = newVmemAddress;
+  vmiMessage("I", "TFT_SH", "Mapping done");
+}
+
+static VMIOS_INTERCEPT_FN(mapExternalVmem) {
+  Uns32 newVmemAddress = 0, index = 0;
+  GET_ARG(processor, object, index, newVmemAddress);
+  if( object->bigEndianGuest )
+    newVmemAddress = bswap_32(newVmemAddress);
+  mapExternalVmemLocal(processor, object, newVmemAddress);
+}
 
 /*static VMIOS_INTERCEPT_FN(drawDisplay) {
   //memDomainP domain = vmirtGetProcessorDataDomain(processor);
@@ -134,6 +173,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
 
 static VMIOS_CONSTRUCTOR_FN(constructor) {
   vmiMessage("I" ,"TFT_SH", "Constructing");
+
   const char *procType = vmirtProcessorType(processor);
   memEndian endian = vmirtGetProcessorDataEndian(processor);
 
@@ -146,6 +186,7 @@ static VMIOS_CONSTRUCTOR_FN(constructor) {
   object->resultLow = vmirtGetRegByName(processor, "eax");
   object->resultHigh = vmirtGetRegByName(processor, "edx");
   object->stackPointer = vmirtGetRegByName(processor, "esp");
+  //TODO get endianess from pse formal or directly from simulated processor - and implement converting!
 
   //set redrawThreadState = 0 (0 = not running, 1 = running, 2 = stop when possible)
   object->redrawThreadState = 0;
@@ -157,6 +198,7 @@ static VMIOS_CONSTRUCTOR_FN(destructor) {
   pthread_join(object->redrawThread, 0);
   SDL_FreeSurface(object->tftSurface);
   SDL_FreeSurface(object->surface);
+  SDL_Quit();
 }
 
 vmiosAttr modelAttrs = {
@@ -177,6 +219,8 @@ vmiosAttr modelAttrs = {
     // -------------------          -------- ------  -----------------
     .intercepts = {
         {"initDisplay",             0,       True,   initDisplay            },
+        {"configureDisplay",        0,       True,   configureDisplay       },
+        {"mapExternalVmem",         0,       True,   mapExternalVmem        },
         //{"drawDisplay",             0,       True,   drawDisplay            },
         //{"updateVmem",              0,       True,   updateVmem             },
         {0}

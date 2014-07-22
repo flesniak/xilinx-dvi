@@ -4,7 +4,7 @@
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
 //                             Version 20131018.0
-//                          Thu Jul  3 14:40:50 2014
+//                          Tue Jul 22 14:36:17 2014
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -21,8 +21,6 @@
 /////////////////////////////// Port Declarations //////////////////////////////
 
 BUS0_AB0_dataT BUS0_AB0_data;
-
-VMEMBUS_VMEMAB_dataT VMEMBUS_VMEMAB_data;
 
 handlesT handles;
 
@@ -41,15 +39,24 @@ static void setDiagLevel(Uns32 new) {
 
 ///////////////////////////// MMR Generic callbacks ////////////////////////////
 
-static PPM_VIEW_CB(view32) {  *(Uns32*)data = *(Uns32*)user; }
+//////////////////////////////// View callbacks ////////////////////////////////
 
-static PPM_READ_CB(read_32) {  return *(Uns32*)user; }
+static PPM_VIEW_CB(view_BUS0_AB0_AR) {
+    *(Uns32*)data = BUS0_AB0_data.AR.value;
+}
 
-static PPM_WRITE_CB(write_32) { *(Uns32*)user = data; }
+static PPM_VIEW_CB(view_BUS0_AB0_CR) {
+    *(Uns32*)data = BUS0_AB0_data.CR.value;
+}
 
+static PPM_VIEW_CB(view_BUS0_AB0_IESR) {
+    *(Uns32*)data = BUS0_AB0_data.IESR.value;
+}
+
+static PPM_VIEW_CB(view_BUS0_AB0_CCR) {
+    *(Uns32*)data = BUS0_AB0_data.CCR.value;
+}
 //////////////////////////////// Bus Slave Ports ///////////////////////////////
-
-PPM_WRITE_CB(vmemChange);
 
 static void installSlavePorts(void) {
     handles.BUS0 = ppmCreateSlaveBusPort("BUS0", 16);
@@ -57,12 +64,6 @@ static void installSlavePorts(void) {
         bhmMessage("E", "PPM_SPNC", "Could not connect port 'BUS0'");
     }
 
-    handles.VMEMBUS = ppmCreateSlaveBusPort("VMEMBUS", 4194304);
-    if (!handles.VMEMBUS) {
-        bhmMessage("E", "PPM_SPNC", "Could not connect port 'VMEMBUS'");
-    }
-
-    //ppmInstallChangeCallback(vmemChange, (void*)0x0, handles.VMEMBUS+0x0, 0x400000);
 }
 
 //////////////////////////// Memory mapped registers ///////////////////////////
@@ -74,10 +75,10 @@ static void installRegisters(void) {
         handles.BUS0,
         0,
         4,
-        read_32,
-        write_32,
-        view32,
-        &(BUS0_AB0_data.AR.value),
+        readReg,
+        writeReg,
+        view_BUS0_AB0_AR,
+        (void*)0x0,
         True
     );
     ppmCreateRegister("CR",
@@ -85,10 +86,10 @@ static void installRegisters(void) {
         handles.BUS0,
         4,
         4,
-        read_32,
-        write_32,
-        view32,
-        &(BUS0_AB0_data.CR.value),
+        readReg,
+        writeReg,
+        view_BUS0_AB0_CR,
+        (void*)0x1,
         True
     );
     ppmCreateRegister("IESR",
@@ -96,10 +97,10 @@ static void installRegisters(void) {
         handles.BUS0,
         8,
         4,
-        read_32,
-        write_32,
-        view32,
-        &(BUS0_AB0_data.IESR.value),
+        readReg,
+        writeReg,
+        view_BUS0_AB0_IESR,
+        (void*)0x2,
         True
     );
     ppmCreateRegister("CCR",
@@ -107,10 +108,10 @@ static void installRegisters(void) {
         handles.BUS0,
         12,
         4,
-        read_32,
-        write_32,
-        view32,
-        &(BUS0_AB0_data.CCR.value),
+        readReg,
+        writeReg,
+        view_BUS0_AB0_CCR,
+        (void*)0x3,
         True
     );
 

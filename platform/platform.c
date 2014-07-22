@@ -120,6 +120,10 @@ int main( int argc, char** argv ) {
   const char* model = icmGetVlnvString( 0, "ovpworld.org", "processor", "or1k", "1.0", "model" );
   const char* semihosting = icmGetVlnvString( 0, "ovpworld.org", "semihosting", "or1kNewlib", "1.0", "model" );
 
+  icmAttrListP userAttrs = icmNewAttrList();
+  icmAddDoubleAttr(userAttrs, "mips", 800.0);
+  //icmAddStringAttr(userAttrs, "endian", "little"); //or1k toolchain does not seem to support little endian
+
   icmProcessorP processor1 = icmNewProcessor(
       "cpu1",             // CPU name
       "or1k",             // CPU type
@@ -129,7 +133,7 @@ int main( int argc, char** argv ) {
       model,              // model file
       "",                 // morpher attributes
       options.processorAttributes, // enable tracing or register values
-      0,                  // user-defined attributes
+      userAttrs,          // user-defined attributes
       semihosting,        // semi-hosting file
       ""                  // semi-hosting attributes
   );
@@ -144,14 +148,21 @@ int main( int argc, char** argv ) {
     icmMemoryP mem1 = icmNewMemory( "mem1", ICM_PRIV_RWX, DVI_BASE_ADDRESS - 1 );
     icmConnectMemoryToBus( bus1, "port1", mem1, 0 );
 
+    //set big endian mode for or1k processor
+    icmAttrListP pseAttrs = icmNewAttrList();
+    icmAddBoolAttr(pseAttrs, "bigEndianGuest", 1);
+
     //memory from DVI_BASE_ADDRESS to DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1; map dvi peripheral to memory hole
-    icmPseP dvi = icmNewPSE( "dvi", "/home/lesniak/ovp/xilinx-dvi/pse/pse.pse", 0, 0, 0 );
+    icmPseP dvi = icmNewPSE( "dvi", "/home/lesniak/ovp/xilinx-dvi/pse/pse.pse", pseAttrs, 0, 0 );
     icmConnectPSEBus( dvi, bus1, "BUS0", 0, DVI_BASE_ADDRESS, DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE - 1 );
-    icmConnectPSEBus( dvi, bus1, "VMEMBUS", 0, DVI_VMEM_ADDRESS, DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1 );
+    //icmConnectPSEBus( dvi, bus1, "VMEMBUS", 0, DVI_VMEM_ADDRESS, DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1 );
+    icmConnectPSEBusDynamic( dvi, bus1, "VMEMBUS", 0 );
 
     //memory from DVI_VMEM_ADDRESS + DVI_VMEM_SIZE to UINT_MAX -1
-    icmMemoryP mem2 = icmNewMemory( "mem2", ICM_PRIV_RWX, UINT_MAX - (DVI_VMEM_ADDRESS + DVI_VMEM_SIZE) - 1 );
-    icmConnectMemoryToBus( bus1, "port2", mem2, DVI_VMEM_ADDRESS + DVI_VMEM_SIZE );
+    //icmMemoryP mem2 = icmNewMemory( "mem2", ICM_PRIV_RWX, UINT_MAX - (DVI_VMEM_ADDRESS + DVI_VMEM_SIZE) - 1 );
+    //icmConnectMemoryToBus( bus1, "port2", mem2, DVI_VMEM_ADDRESS + DVI_VMEM_SIZE );
+    icmMemoryP mem2 = icmNewMemory( "mem2", ICM_PRIV_RWX, UINT_MAX - (DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE) - 1 );
+    icmConnectMemoryToBus( bus1, "port2", mem2, DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE );
 
     //load semihost library
     icmAddPseInterceptObject( dvi, "dvi", "/home/lesniak/ovp/xilinx-dvi/model/model.so", 0, 0);

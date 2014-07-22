@@ -4,7 +4,7 @@
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
 //                             Version 20131018.0
-//                          Thu Jul  3 14:40:50 2014
+//                          Tue Jul 22 14:36:17 2014
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -40,11 +40,6 @@
 #define BUS0_AB0_CCR_CD   0xff
 #define BUS0_AB0_CCR_CA   (0xff << 8)
 #define BUS0_AB0_CCR_ST   (0x1 << 31)
-
-// Set the macro 'VMEMBUS' to the base of port 'VMEMBUS'
-#ifndef VMEMBUS
-    #error VMEMBUS is undefined.It needs to be set to the port base address
-#endif
 
 
 #endif

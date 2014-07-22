@@ -4,7 +4,7 @@
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
 //                             Version 20131018.0
-//                          Thu Jul  3 14:40:50 2014
+//                          Tue Jul 22 14:36:17 2014
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -32,7 +32,7 @@ static ppmBusPort busPorts[] = {
         .type            = PPM_SLAVE_PORT,
         .addrHi          = 0x3fffffLL,
         .mustBeConnected = 1,
-        .remappable      = 0,
+        .remappable      = 1,
         .description     = "Video memory, sized 2MB",
     },
     { 0 }
@@ -61,6 +61,11 @@ static PPM_NET_PORT_FN(nextNetPort) {
 }
 
 static ppmParameter parameters[] = {
+    {
+        .name        = "bigEndianGuest",
+        .type        = ppm_PT_BOOL,
+        .description = 0,
+    },
     { 0 }
 };
 
