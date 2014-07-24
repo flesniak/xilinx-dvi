@@ -24,18 +24,9 @@ Uns32 initDisplay() {
   return 0;
 }
 
-/*Uns32 drawDisplay() {
-  bhmMessage("F", "TFT_PSE", "Failed to intercept : drawDisplay(Uns64)");
-  return 0;
-}*/
-
 void closeDisplay() {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : closeDisplay(Uns64)");
 }
-
-/*void updateVmem(Uns32 baseAddress, Uns32 size) {
-  bhmMessage("F", "TFT_PSE", "Failed to intercept : updateVmem(Uns32,Uns32)");
-}*/
 
 void configureDisplay(bool enable, bool scanDirection) {
     bhmMessage("F", "TFT_PSE", "Failed to intercept : configureDisplay()");
@@ -72,7 +63,6 @@ PPM_REG_READ_CB(readReg) {
 }
 
 PPM_REG_WRITE_CB(writeReg) {
-  //TODO handle big endian? has to be converted because pse runs on native host platform
   Uns32 reg = (Uns32)user;
   switch( reg ) {
     case 0 : //address register
@@ -97,6 +87,7 @@ PPM_REG_WRITE_CB(writeReg) {
   }
 }
 
+//static unsigned char buf[DVI_VMEM_SIZE];
 PPM_CONSTRUCTOR_CB(constructor) {
   bhmMessage("I", "TFT_PSE", "Constructing");
   periphConstructor();
@@ -113,21 +104,11 @@ PPM_CONSTRUCTOR_CB(constructor) {
     BUS0_AB0_data.AR.value = bswap_32(DVI_VMEM_ADDRESS);
   else
     BUS0_AB0_data.AR.value = DVI_VMEM_ADDRESS;
-  //ppmExposeLocalBus("VMEMBUS", DVI_VMEM_ADDRESS, DVI_VMEM_SIZE, 0);
-  //ppmCreateDynamicSlavePort("VMEMBUS", DVI_VMEM_ADDRESS, DVI_VMEM_SIZE, 0);
-  //mapExternalVmem(BUS0_AB0_data.AR.value);
 
-  /*while( success ) {
-    bhmWaitDelay(1000000/TARGET_FPS);
-    bhmMessage("I", "XPS_PSE", "Redrawing display drawDisplay()");
-    success = drawDisplay();
-  }*/
+  mapExternalVmem(BUS0_AB0_data.AR.value);
+
   bhmWaitEvent(bhmGetSystemEvent(BHM_SE_END_OF_SIMULATION) );
 }
-
-/*PPM_WRITE_CB(vmemChange) {
-  updateVmem((Uns32)addr, bytes);
-}*/
 
 PPM_DESTRUCTOR_CB(destructor) {
   bhmMessage("I", "TFT_PSE", "Destructing");

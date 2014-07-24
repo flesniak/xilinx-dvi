@@ -15,6 +15,7 @@
 #include <vmi/vmiTypes.h>
 #include <vmi/vmiOSAttrs.h>
 #include <vmi/vmiOSLib.h>
+#include <vmi/vmiPSE.h>
 
 #include "../dvi-mem.h"
 
@@ -28,6 +29,7 @@ typedef struct vmiosObjectS {
   pthread_t redrawThread;
   int redrawThreadState;
   bool bigEndianGuest;
+  memDomainP realDomain;
 } vmiosObject;
 
 static void getArg(vmiProcessorP processor, vmiosObjectP object, Uns32 *index, void* result, Uns32 argSize) {
@@ -65,7 +67,7 @@ static void* drawDisplay(void* objectV) {
   vmiosObjectP object = (vmiosObjectP)objectV;
   object->redrawThreadState = 1; //thread is running
   while( object->redrawThreadState == 1 ) {
-    surfDump(object->tftSurface, 64);
+    //surfDump(object->tftSurface, 64);
     if( SDL_BlitSurface(object->tftSurface, 0, object->surface, 0) )
       vmiMessage("W", "TFT_SH", "Surface blit failed");
     SDL_UpdateRect(object->surface, 0, 0, 0, 0);
@@ -75,7 +77,14 @@ static void* drawDisplay(void* objectV) {
   pthread_exit(0);
 }
 
-//void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 newVmemAddress);
+memDomainP getSimulatedVmemDomain(vmiProcessorP processor, char* name) {
+  Addr lo, hi;
+  Bool isMaster, isDynamic;
+  memDomainP simDomain = vmipsePlatformPortAttributes(processor, DVI_VMEM_BUS_NAME, &lo, &hi, &isMaster, &isDynamic);
+  if( !simDomain )
+    vmiMessage("F", "TFT_SH", "Failed to obtain %s platform port", DVI_VMEM_BUS_NAME);
+  return simDomain;
+}
 
 static VMIOS_INTERCEPT_FN(initDisplay) {
   Uns32 index = 0;
@@ -87,7 +96,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   object->surface = SDL_SetVideoMode(640, 480, 0, SDL_SWSURFACE);
   if( !object->surface )
     vmiMessage("F", "TFT_SH", "Couldn't initialize surface: %s\n", SDL_GetError());
-  SDL_FillRect(object->surface, 0, SDL_MapRGB(object->surface->format, 0, 0, 0xff));
+  SDL_FillRect(object->surface, 0, SDL_MapRGB(object->surface->format, 0, 0, 0));
   SDL_UpdateRect(object->surface, 0, 0, 0, 0);
 
   //create a surface matching the pixel format of the xilinx tft controller
@@ -97,13 +106,10 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   SDL_FillRect(object->tftSurface, 0, SDL_MapRGB(object->tftSurface->format, 0, 0, 0));
   SDL_UpdateRect(object->tftSurface, 0, 0, 0, 0);
 
-  //map native memory (tftSurface pixel storage) into the pse memory domain
-  /*memDomainP domain = vmirtGetProcessorDataDomain(processor);
-  if( !vmirtMapNativeMemory(domain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, object->tftSurface->pixels) )
-  	vmiMessage("F", "TFT_SH", "Failed to map native vmem");*/
-  //object->vmemBaseAddr = 0;
-  //mapExternalVmemLocal(processor, object, DVI_VMEM_ADDRESS);
-  //PSE initiates vmem mapping
+  object->realDomain = vmirtNewDomain("real", 32);
+  getSimulatedVmemDomain(processor, DVI_VMEM_BUS_NAME); //just to check if VMEMBUS is connected
+  if( !vmirtMapNativeMemory(object->realDomain, 0, DVI_VMEM_SIZE-1, object->tftSurface->pixels) )
+  	vmiMessage("F", "TFT_SH", "Failed to map native vmem to semihost memory domain");
 
   pthread_create(&object->redrawThread, 0, drawDisplay, (void*)object);
 
@@ -122,15 +128,16 @@ static VMIOS_INTERCEPT_FN(configureDisplay) {
 
 void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 newVmemAddress) {
   vmiMessage("I", "TFT_SH", "Mapping external vmem (new addr 0x%08x, old addr 0x%08x)", newVmemAddress, object->vmemBaseAddr);
-  memDomainP domain = vmirtGetProcessorDataDomain(processor);
-  if( object->vmemBaseAddr )
-    vmirtUnaliasMemory(domain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1);
-  //vmirtMapMemory(domain, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1, MEM_RAM);
-  if( !vmirtMapNativeMemory(domain, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1, object->tftSurface->pixels) )
-  	vmiMessage("F", "TFT_SH", "Failed to map native vmem (new addr 0x%08x, old addr 0x%08x)", newVmemAddress, object->vmemBaseAddr);
-  else
-    object->vmemBaseAddr = newVmemAddress;
-  vmiMessage("I", "TFT_SH", "Mapping done");
+  if( object->vmemBaseAddr ) {
+    vmiMessage("I", "TFT_SH", "Unaliasing previously mapped memory at 0x%08x", object->vmemBaseAddr);
+    memDomainP simDomain = getSimulatedVmemDomain(processor, DVI_VMEM_BUS_NAME);
+    vmirtUnaliasMemory(simDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1);
+    //vmirtMapMemory(simDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, MEM_RAM);
+    //NOTE this unalias command does not work as expected. OVPsim seems to not yet have a way to dynamically unmap vmipse-mapped memory
+    //The memory will be unmapped completely and not re-mapped to the ordinary platform-initialized RAM
+  }
+  vmipseAliasMemory(object->realDomain, DVI_VMEM_BUS_NAME, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1);
+  object->vmemBaseAddr = newVmemAddress;
 }
 
 static VMIOS_INTERCEPT_FN(mapExternalVmem) {
@@ -140,36 +147,6 @@ static VMIOS_INTERCEPT_FN(mapExternalVmem) {
     newVmemAddress = bswap_32(newVmemAddress);
   mapExternalVmemLocal(processor, object, newVmemAddress);
 }
-
-/*static VMIOS_INTERCEPT_FN(drawDisplay) {
-  //memDomainP domain = vmirtGetProcessorDataDomain(processor);
-  //(domain, object->vmemBaseAddr, object->tftSurface->pixels, 1024*512*4, 0, True);
-  if( SDL_BlitSurface(object->tftSurface, 0, object->surface, 0) )
-    vmiMessage("W", "TFT_SH", "Surface blit failed");
-  SDL_UpdateRect(object->surface, 0, 0, 0, 0);
-}*/
-
-/*static VMIOS_INTERCEPT_FN(updateVmem) {
-  Uns32 updateBase = 0, updateSize = 0, index = 0;
-  GET_ARG(processor, object, index, updateBase);
-  GET_ARG(processor, object, index, updateSize);
-
-  //resized tftSurface to vmem size, thus we do not need to strip out the vmem hole
-  const Uns32 offset = updateBase-object->vmemBaseAddr;
-  const Uns32 y = offset / 4096; //offset in scanlines (pitch = BytesPerPixel*xResolution)
-  const Uns32 x = (offset % 4096); //offset in bytes (4 BytesPerPixel)
-  const Uns32 surfaceOffset = y*object->tftSurface->pitch + x;
-  if( x > 640*4-1 || y > 479 ) {
-    vmiMessage("W", "TFT_SH", "Write to vmem out of 640x480 bounds occured, discarding (x %d y %d offset %d)\n", x/4, y, surfaceOffset);
-    return;
-  } else
-    vmiMessage("I", "TFT_SH", "pixel data written to x %d y %d (offset %d)\n", x, y, surfaceOffset);
-
-  memDomainP domain = vmirtGetProcessorDataDomain(processor);
-  SDL_LockSurface(object->surface);
-  vmirtReadNByteDomain(domain, updateBase, object->tftSurface->pixels, updateSize, 0, True);
-  SDL_UnlockSurface(object->surface);
-}*/
 
 static VMIOS_CONSTRUCTOR_FN(constructor) {
   vmiMessage("I" ,"TFT_SH", "Constructing");
@@ -186,9 +163,9 @@ static VMIOS_CONSTRUCTOR_FN(constructor) {
   object->resultLow = vmirtGetRegByName(processor, "eax");
   object->resultHigh = vmirtGetRegByName(processor, "edx");
   object->stackPointer = vmirtGetRegByName(processor, "esp");
-  //TODO get endianess from pse formal or directly from simulated processor - and implement converting!
+  //TODO get endianess directly from the simulated processor instead of a formal? is this possible?
 
-  //set redrawThreadState = 0 (0 = not running, 1 = running, 2 = stop when possible)
+  //redrawThreadState (0 = not running, 1 = running, 2 = stop when possible)
   object->redrawThreadState = 0;
 }
 
@@ -221,8 +198,6 @@ vmiosAttr modelAttrs = {
         {"initDisplay",             0,       True,   initDisplay            },
         {"configureDisplay",        0,       True,   configureDisplay       },
         {"mapExternalVmem",         0,       True,   mapExternalVmem        },
-        //{"drawDisplay",             0,       True,   drawDisplay            },
-        //{"updateVmem",              0,       True,   updateVmem             },
         {0}
     }
 };

@@ -23,6 +23,7 @@
 #include "../dvi-mem.h"
 
 #define REMAP_TO 0xDEADBEEF
+#define WAIT_PER_TEST 2
 
 void setPixel(unsigned char* vmem, unsigned short x, unsigned short y, unsigned char r, unsigned char g, unsigned char b) {
   unsigned char* pixel = vmem + (DVI_VMEM_SCANLINE*y + x*DVI_VMEM_BYTES_PER_PIXEL);
@@ -31,39 +32,47 @@ void setPixel(unsigned char* vmem, unsigned short x, unsigned short y, unsigned 
   pixel[3] = b>>2;
 }
 
+void fillScreen(unsigned char* vmem, unsigned char r, unsigned char g, unsigned char b) {
+  for( unsigned int y = 0; y < 480; y++ )
+    for( unsigned int x = 0; x < 640; x++ )
+      setPixel(vmem, x, y, r, g, b);
+}
+
 //100 MIPS = 100 kIPms = 100 IPµs
 void usleep(unsigned int us) {
   while( us ) {
-    for(volatile unsigned char i = 0; i < 40; i++); //this loop takes ~100 instructions
+    for(volatile unsigned char i = 0; i < 45; i++); //this loop takes ~100 instructions
     us--;
   }
 }
 
 int main() {
-  unsigned char* vmem = (unsigned char*)DVI_VMEM_ADDRESS;
+  unsigned char* firstVmem = (unsigned char*)DVI_VMEM_ADDRESS;
+  unsigned char* secondVmem = (unsigned char*)REMAP_TO;
   unsigned int* volatile ar = (unsigned int*)DVI_BASE_ADDRESS;
 
   printf("Startup.\n");
   printf("Reading from AR: 0x%08x\n", *ar);
 
-  printf("Filling the screen green.\n");
-  for( unsigned int y = 0; y < 480; y++ )
-    for( unsigned int x = 0; x < 640; x++ )
-      setPixel(vmem, x, y, 0, 255, 0);
-  usleep(1000000); //should be ~1 sec
+  printf("Filling the screen red at current vmem address.\n");
+  fillScreen(firstVmem, 0xff, 0, 0);
+  usleep(WAIT_PER_TEST*1000000);
 
   printf("Writing to AR (this should remap the bus to 0x%08x)\n", REMAP_TO);
   *ar = REMAP_TO;
   printf("Reading from AR: 0x%08x\n", *ar);
-  usleep(1000000); //should be ~1 sec
+  usleep(WAIT_PER_TEST*1000000);
 
-  printf("Filling the screen red.\n");
-  for( unsigned int y = 0; y < 480; y++ )
-    for( unsigned int x = 0; x < 640; x++ )
-      setPixel(vmem, x, y, 255, 0, 0);
+  printf("Filling the screen green at new vmem address.\n");
+  fillScreen(secondVmem, 0, 0xff, 0);
+  usleep(WAIT_PER_TEST*1000000);
 
-  printf("Painting done, looping.\n");
-  usleep(10000000); //should be ~10 sec
+  printf("Filling the screen blue at old vmem address. NOTHING SHOULD HAPPEN!\n");
+  fillScreen(firstVmem, 0, 0, 0xff);
+  usleep(WAIT_PER_TEST*1000000);
+
+  printf("Test done, looping.\n");
+  while( 1 );
 
   return 0;
 }

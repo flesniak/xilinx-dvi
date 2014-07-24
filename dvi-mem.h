@@ -6,6 +6,9 @@
 #define DVI_VMEM_ADDRESS                DVI_BASE_ADDRESS+DVI_CONTROL_REGS_SIZE
 #define DVI_VMEM_SIZE                   0x400000U
 
+#define DVI_REGS_BUS_NAME               "BUS0"
+#define DVI_VMEM_BUS_NAME               "VMEMBUS"
+
 #define DVI_VMEM_BYTES_PER_PIXEL        4
 #define DVI_VMEM_SCANLINE               1024*DVI_VMEM_BYTES_PER_PIXEL
 #define DVI_VMEM_RMASK                  0x00003f00

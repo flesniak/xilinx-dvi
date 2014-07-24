@@ -154,9 +154,9 @@ int main( int argc, char** argv ) {
 
     //memory from DVI_BASE_ADDRESS to DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1; map dvi peripheral to memory hole
     icmPseP dvi = icmNewPSE( "dvi", "/home/lesniak/ovp/xilinx-dvi/pse/pse.pse", pseAttrs, 0, 0 );
-    icmConnectPSEBus( dvi, bus1, "BUS0", 0, DVI_BASE_ADDRESS, DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE - 1 );
+    icmConnectPSEBus( dvi, bus1, DVI_REGS_BUS_NAME, 0, DVI_BASE_ADDRESS, DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE - 1 );
     //icmConnectPSEBus( dvi, bus1, "VMEMBUS", 0, DVI_VMEM_ADDRESS, DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1 );
-    icmConnectPSEBusDynamic( dvi, bus1, "VMEMBUS", 0 );
+    icmConnectPSEBusDynamic( dvi, bus1, DVI_VMEM_BUS_NAME, 0 );
 
     //memory from DVI_VMEM_ADDRESS + DVI_VMEM_SIZE to UINT_MAX -1
     //icmMemoryP mem2 = icmNewMemory( "mem2", ICM_PRIV_RWX, UINT_MAX - (DVI_VMEM_ADDRESS + DVI_VMEM_SIZE) - 1 );
