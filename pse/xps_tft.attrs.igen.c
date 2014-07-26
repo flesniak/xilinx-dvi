@@ -4,7 +4,7 @@
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
 //                             Version 20131018.0
-//                          Tue Jul 22 14:36:17 2014
+//                          Sat Jul 26 15:55:28 2014
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -64,6 +64,16 @@ static ppmParameter parameters[] = {
     {
         .name        = "bigEndianGuest",
         .type        = ppm_PT_BOOL,
+        .description = 0,
+    },
+    {
+        .name        = "output",
+        .type        = ppm_PT_STRING,
+        .description = 0,
+    },
+    {
+        .name        = "polledRedraw",
+        .type        = ppm_PT_UNS32,
         .description = 0,
     },
     { 0 }

@@ -151,6 +151,8 @@ int main( int argc, char** argv ) {
     //set big endian mode for or1k processor
     icmAttrListP pseAttrs = icmNewAttrList();
     icmAddBoolAttr(pseAttrs, "bigEndianGuest", 1);
+    //icmAddStringAttr(pseAttrs, "output", "dlo");
+    //icmAddUns32Attr(pseAttrs, "polledRedraw", DVI_REDRAW_PSE);
 
     //memory from DVI_BASE_ADDRESS to DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1; map dvi peripheral to memory hole
     icmPseP dvi = icmNewPSE( "dvi", "/home/lesniak/ovp/xilinx-dvi/pse/pse.pse", pseAttrs, 0, 0 );

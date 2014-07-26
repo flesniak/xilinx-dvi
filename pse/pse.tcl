@@ -35,4 +35,8 @@ iadddocumentation   -name Description -text "Xilinx XPS TFT Controller"
   #  imodeladdlocalmemory  -name VMEM    -size 0x400000 -addressblock VMEMBUS/VMEMAB
 
   imodeladdformal -name "bigEndianGuest" -type bool
+  imodeladdformal -name "output" -type string
+    #-defaultvalue "sdl" #"sdl" or "dlo"
+    #bug in igen.exe? -defaultvalue is not recognized
+  imodeladdformal -name "polledRedraw" -type uns32
 

@@ -29,6 +29,8 @@ typedef struct vmiosObjectS {
   pthread_t redrawThread;
   int redrawThreadState;
   bool bigEndianGuest;
+  int output;
+  int redrawMode;
   memDomainP realDomain;
 } vmiosObject;
 
@@ -63,14 +65,18 @@ void surfDump(SDL_Surface* surf, unsigned int n) {
   printf("\n");
 }
 
-static void* drawDisplay(void* objectV) {
+inline static void drawDisplay(vmiosObjectP object) {
+  if( SDL_BlitSurface(object->tftSurface, 0, object->surface, 0) )
+    vmiMessage("W", "TFT_SH", "Surface blit failed");
+  SDL_UpdateRect(object->surface, 0, 0, 0, 0);
+}
+
+static void* drawDisplayThread(void* objectV) {
   vmiosObjectP object = (vmiosObjectP)objectV;
   object->redrawThreadState = 1; //thread is running
   while( object->redrawThreadState == 1 ) {
     //surfDump(object->tftSurface, 64);
-    if( SDL_BlitSurface(object->tftSurface, 0, object->surface, 0) )
-      vmiMessage("W", "TFT_SH", "Surface blit failed");
-    SDL_UpdateRect(object->surface, 0, 0, 0, 0);
+    drawDisplay(object);
     usleep(1000000/DVI_TARGET_FPS);
   }
   object->redrawThreadState = 0; //thread is stopped
@@ -89,6 +95,17 @@ memDomainP getSimulatedVmemDomain(vmiProcessorP processor, char* name) {
 static VMIOS_INTERCEPT_FN(initDisplay) {
   Uns32 index = 0;
   GET_ARG(processor, object, index, object->bigEndianGuest);
+  GET_ARG(processor, object, index, object->output);
+  GET_ARG(processor, object, index, object->redrawMode);
+  
+  if( object->bigEndianGuest ) {
+    vmiMessage("I", "TFT_SH", "working with big-endian guest");
+    object->output = bswap_32(object->output);
+    object->output = bswap_32(object->redrawMode);
+  }
+
+  if( object->output == DVI_OUTPUT_DLO )
+    vmiMessage("W", "TFT_SH", "DLO output not implemented yet, falling back to SDL");
 
   if( SDL_Init(SDL_INIT_VIDEO) )
     vmiMessage("F", "TFT_SH", "Couldn't initialize SDL: %s\n", SDL_GetError());
@@ -111,7 +128,10 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   if( !vmirtMapNativeMemory(object->realDomain, 0, DVI_VMEM_SIZE-1, object->tftSurface->pixels) )
   	vmiMessage("F", "TFT_SH", "Failed to map native vmem to semihost memory domain");
 
-  pthread_create(&object->redrawThread, 0, drawDisplay, (void*)object);
+  if( object->redrawMode == DVI_REDRAW_PTHREAD ) {
+    vmiMessage("I", "TFT_SH", "Launching redraw pthread");
+    pthread_create(&object->redrawThread, 0, drawDisplayThread, (void*)object);
+  }
 
   Uns32 success = 1;
   retArg(processor, object, &success); //return success
@@ -135,6 +155,7 @@ void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 ne
     //vmirtMapMemory(simDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, MEM_RAM);
     //NOTE this unalias command does not work as expected. OVPsim seems to not yet have a way to dynamically unmap vmipse-mapped memory
     //The memory will be unmapped completely and not re-mapped to the ordinary platform-initialized RAM
+    //Perhaps try to get originally mapped domain, save it and map it back later on here?
   }
   vmipseAliasMemory(object->realDomain, DVI_VMEM_BUS_NAME, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1);
   object->vmemBaseAddr = newVmemAddress;
@@ -146,6 +167,10 @@ static VMIOS_INTERCEPT_FN(mapExternalVmem) {
   if( object->bigEndianGuest )
     newVmemAddress = bswap_32(newVmemAddress);
   mapExternalVmemLocal(processor, object, newVmemAddress);
+}
+
+static VMIOS_INTERCEPT_FN(redrawCallback) {
+  drawDisplay(object);
 }
 
 static VMIOS_CONSTRUCTOR_FN(constructor) {
@@ -198,6 +223,7 @@ vmiosAttr modelAttrs = {
         {"initDisplay",             0,       True,   initDisplay            },
         {"configureDisplay",        0,       True,   configureDisplay       },
         {"mapExternalVmem",         0,       True,   mapExternalVmem        },
+        {"redrawCallback",          0,       True,   redrawCallback         },
         {0}
     }
 };

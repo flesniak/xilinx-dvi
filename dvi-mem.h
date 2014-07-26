@@ -15,6 +15,11 @@
 #define DVI_VMEM_GMASK                  0x003f0000
 #define DVI_VMEM_BMASK                  0x3f000000
 
-#define DVI_TARGET_FPS 1
+#define DVI_TARGET_FPS 25
+
+#define DVI_OUTPUT_SDL                  0
+#define DVI_OUTPUT_DLO                  1
+#define DVI_REDRAW_PTHREAD              0
+#define DVI_REDRAW_PSE                  1
 
 #endif //DVI_MEM
