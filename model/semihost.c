@@ -31,6 +31,8 @@ typedef struct vmiosObjectS {
   bool bigEndianGuest;
   int output;
   int redrawMode;
+  int enableVsyncInterrupt;
+  int vsyncState;
   memDomainP realDomain;
 } vmiosObject;
 
@@ -44,11 +46,10 @@ static void getArg(vmiProcessorP processor, vmiosObjectP object, Uns32 *index, v
 
 #define GET_ARG(_PROCESSOR, _OBJECT, _INDEX, _ARG) getArg(_PROCESSOR, _OBJECT, &_INDEX, &_ARG, sizeof(_ARG))
 
-inline static void retArg(vmiProcessorP processor, vmiosObjectP object, void *result) {
-  Uns64 arg = *(Uns64*)result;
-  vmirtRegWrite(processor, object->resultLow, &arg);
-  arg >>= 32;
-  vmirtRegWrite(processor, object->resultHigh, &arg);
+inline static void retArg(vmiProcessorP processor, vmiosObjectP object, Uns64 result) {
+  vmirtRegWrite(processor, object->resultLow, &result);
+  result >>= 32;
+  vmirtRegWrite(processor, object->resultHigh, &result);
 }
 
 void surfDump(SDL_Surface* surf, unsigned int n) {
@@ -76,7 +77,11 @@ static void* drawDisplayThread(void* objectV) {
   object->redrawThreadState = 1; //thread is running
   while( object->redrawThreadState == 1 ) {
     //surfDump(object->tftSurface, 64);
+    object->vsyncState = 1;
     drawDisplay(object);
+    object->vsyncState = 0;
+    if( object->enableVsyncInterrupt );
+      //TODO write interrupt net VSYNCINT
     usleep(1000000/DVI_TARGET_FPS);
   }
   object->redrawThreadState = 0; //thread is stopped
@@ -133,10 +138,8 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
     pthread_create(&object->redrawThread, 0, drawDisplayThread, (void*)object);
   }
 
-  Uns32 success = 1;
-  retArg(processor, object, &success); //return success
+  retArg(processor, object, 1); //return success
 }
-
 static VMIOS_INTERCEPT_FN(configureDisplay) {
   Uns32 enable = 0, scanDirection = 0, index = 0;
   GET_ARG(processor, object, index, enable);
@@ -173,6 +176,17 @@ static VMIOS_INTERCEPT_FN(redrawCallback) {
   drawDisplay(object);
 }
 
+
+static VMIOS_INTERCEPT_FN(enableVsyncInterrupt) {
+  Uns32 enable = 0, index = 0;
+  GET_ARG(processor, object, index, enable);
+  object->enableVsyncInterrupt = enable;
+}
+
+static VMIOS_INTERCEPT_FN(getVsyncStatus) {
+  retArg(processor, object, object->vsyncState);
+}
+
 static VMIOS_CONSTRUCTOR_FN(constructor) {
   vmiMessage("I" ,"TFT_SH", "Constructing");
 
@@ -192,6 +206,8 @@ static VMIOS_CONSTRUCTOR_FN(constructor) {
 
   //redrawThreadState (0 = not running, 1 = running, 2 = stop when possible)
   object->redrawThreadState = 0;
+  object->enableVsyncInterrupt = 0;
+  object->vsyncState = 0;
 }
 
 static VMIOS_CONSTRUCTOR_FN(destructor) {
@@ -224,6 +240,8 @@ vmiosAttr modelAttrs = {
         {"configureDisplay",        0,       True,   configureDisplay       },
         {"mapExternalVmem",         0,       True,   mapExternalVmem        },
         {"redrawCallback",          0,       True,   redrawCallback         },
+        {"enableVsyncInterrupt",    0,       True,   enableVsyncInterrupt   },
+        {"getVsyncStatus",          0,       True,   getVsyncStatus         },
         {0}
     }
 };

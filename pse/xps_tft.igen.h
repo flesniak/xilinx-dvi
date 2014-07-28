@@ -4,7 +4,7 @@
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
 //                             Version 20131018.0
-//                          Sat Jul 26 15:55:28 2014
+//                          Mon Jul 28 18:45:36 2014
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -68,6 +68,7 @@ extern BUS0_AB0_dataT BUS0_AB0_data;
 
 typedef struct handlesS {
     void                 *BUS0;
+    ppmNetHandle          VSYNCINT;
 } handlesT, *handlesTP;
 
 extern handlesT handles;

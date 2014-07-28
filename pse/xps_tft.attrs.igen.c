@@ -4,7 +4,7 @@
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
 //                             Version 20131018.0
-//                          Sat Jul 26 15:55:28 2014
+//                          Mon Jul 28 18:45:36 2014
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -48,6 +48,12 @@ static PPM_BUS_PORT_FN(nextBusPort) {
 }
 
 static ppmNetPort netPorts[] = {
+    {
+        .name            = "VSYNCINT",
+        .type            = PPM_OUTPUT_PORT,
+        .mustBeConnected = 0,
+        .description     = 0
+    },
     { 0 }
 };
 

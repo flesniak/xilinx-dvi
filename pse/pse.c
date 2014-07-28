@@ -16,10 +16,10 @@
 #include "../dvi-mem.h"
 
 typedef _Bool bool;
+static bool bigEndianGuest;
+static unsigned int redrawMode;
 
-#define TARGET_FPS 25
-
-Uns32 initDisplay(Uns32 endianess, Uns32 output, Uns32 redrawMode) {
+Uns32 initDisplay(Uns32 bigEndianGuest, Uns32 output, Uns32 redrawMode) {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : initDisplay()");
   return 0;
 }
@@ -40,24 +40,37 @@ void redrawCallback() {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : redrawCallback()");
 }
 
+void enableVsyncInterrupt(bool enabled) {
+  bhmMessage("F", "TFT_PSE", "Failed to intercept : enableVsyncInterrupt()");
+}
+
+int getVsyncStatus() {
+  bhmMessage("F", "TFT_PSE", "Failed to intercept : getVsyncStatus()");
+  return 0;
+}
+
 PPM_REG_READ_CB(readReg) {
   Uns32 reg = (Uns32)user;
   switch( reg ) {
     case 0 : //address register
-      bhmMessage("I", "TFT_PSE", "Read from address register for %d bytes at 0x%08x", bytes, (Uns32)addr);
-      return BUS0_AB0_data.AR.value;
+      bhmMessage("D", "TFT_PSE", "Read from address register for %d bytes at 0x%08x", bytes, (Uns32)addr);
+      return bigEndianGuest ? bswap_32(BUS0_AB0_data.AR.value) : BUS0_AB0_data.AR.value;
       break;
     case 1 : //control register
-      bhmMessage("I", "TFT_PSE", "Read from control register for %d bytes at 0x%08x", bytes, (Uns32)addr);
-      return BUS0_AB0_data.CR.value;
+      bhmMessage("D", "TFT_PSE", "Read from control register for %d bytes at 0x%08x", bytes, (Uns32)addr);
+      return bigEndianGuest ? bswap_32(BUS0_AB0_data.CR.value) : BUS0_AB0_data.CR.value;
       break;
     case 2 : //interrupt enable & status register
-      bhmMessage("I", "TFT_PSE", "Read from interrupt register for %d bytes at 0x%08x", bytes, (Uns32)addr);
-      return BUS0_AB0_data.IESR.value; //TODO either update IESR.value from withing semihost or request vsync state from semihost
+      bhmMessage("D", "TFT_PSE", "Read from interrupt register for %d bytes at 0x%08x", bytes, (Uns32)addr);
+      if( redrawMode == DVI_REDRAW_PTHREAD ) { //if pse parameters (formals) are changed, update index appropriately!
+        Uns32 state = (BUS0_AB0_data.IESR.value & ~DVI_IESR_STATUS_MASK) | (getVsyncStatus() << DVI_IESR_STATUS_OFFSET);
+        return bigEndianGuest ? bswap_32(state) : state;
+      } else
+        return bigEndianGuest ? bswap_32(BUS0_AB0_data.IESR.value) : BUS0_AB0_data.IESR.value;
       break;
     case 3 : //chrontel chip register
       bhmMessage("W", "TFT_PSE", "Unhandled read from CCR: addr 0x%08x %d bytes", (Uns32)addr, bytes);
-      return BUS0_AB0_data.CCR.value;
+      return bigEndianGuest ? bswap_32(BUS0_AB0_data.CCR.value) : BUS0_AB0_data.CCR.value;
       break;
     default:
       bhmMessage("W", "TFT_PSE", "Invalid uder data on readReg\n");
@@ -70,21 +83,25 @@ PPM_REG_WRITE_CB(writeReg) {
   Uns32 reg = (Uns32)user;
   switch( reg ) {
     case 0 : //address register
-      bhmMessage("I", "TFT_PSE", "VRAM address change to 0x%08x requested, remapping", data);
-      BUS0_AB0_data.AR.value = data;
+      bhmMessage("D", "TFT_PSE", "VRAM address change to 0x%08x requested, remapping", data);
+      BUS0_AB0_data.AR.value = bigEndianGuest ? bswap_32(data) : data;
       mapExternalVmem(data);
       break;
     case 1 : //control register
       bhmMessage("I", "TFT_PSE", "Write to control register for %d bytes at 0x%08x data 0x%08x", bytes, (Uns32)addr, data);
       configureDisplay(data & 1, data >> 1 & 1);
-      BUS0_AB0_data.CR.value = data;
+      BUS0_AB0_data.CR.value = bigEndianGuest ? bswap_32(data) : data;
       break;
     case 2 : //interrupt enable & status register
-      BUS0_AB0_data.IESR.value = data;
+      data = (bigEndianGuest ? bswap_32(data) : data) & DVI_IESR_INTENABLE_MASK; //mask out status bit, writes on it have no effect
+      if( data != (BUS0_AB0_data.IESR.value & DVI_IESR_INTENABLE_MASK) ) {
+        enableVsyncInterrupt(data);
+        BUS0_AB0_data.IESR.value = data;
+      }
       break;
     case 3 : //chrontel chip register
       bhmMessage("W", "TFT_PSE", "Unhandled write to CCR: addr 0x%08x data 0x%08x", (Uns32)addr, data);
-      BUS0_AB0_data.CCR.value = data;
+      BUS0_AB0_data.CCR.value = bigEndianGuest ? bswap_32(data) : data;
       break;
     default:
       bhmMessage("W", "TFT_PSE", "Invalid uder data on writeReg\n");
@@ -95,7 +112,7 @@ PPM_CONSTRUCTOR_CB(constructor) {
   bhmMessage("I", "TFT_PSE", "Constructing");
   periphConstructor();
 
-  bool endianess = bhmBoolAttribute("bigEndianGuest");
+  bigEndianGuest = bhmBoolAttribute("bigEndianGuest");
 
   char output[4];
   output[3] = 0;
@@ -114,30 +131,31 @@ PPM_CONSTRUCTOR_CB(constructor) {
       bhmMessage("F", "TFT_PSE", "Invalid output requested: %s", output);
   }
 
-  Uns32 redrawMode = 0;
+  redrawMode = DVI_REDRAW_PTHREAD;
   if( !bhmIntegerAttribute("polledRedraw", &redrawMode) )
     bhmMessage("W", "TFT_PSE", "Reading polledRedraw attribute failed");
 
   bhmMessage("I", "TFT_PSE", "Initializing display initDisplay()");
-  Uns32 success = initDisplay(endianess, outputNum, redrawMode);
+  Uns32 success = initDisplay(bigEndianGuest, outputNum, redrawMode);
 
   if( success )
     bhmMessage("I", "TFT_PSE", "Display initialized successfully");
   else
     bhmMessage("F", "TFT_PSE", "Failed to initialize display");
 
-  if( endianess )
-    BUS0_AB0_data.AR.value = bswap_32(DVI_VMEM_ADDRESS);
+  BUS0_AB0_data.AR.value = DVI_VMEM_ADDRESS;
+  if( bigEndianGuest )
+    mapExternalVmem(bswap_32(BUS0_AB0_data.AR.value));
   else
-    BUS0_AB0_data.AR.value = DVI_VMEM_ADDRESS;
-
-  mapExternalVmem(BUS0_AB0_data.AR.value);
+    mapExternalVmem(BUS0_AB0_data.AR.value);
   
   if( redrawMode == DVI_REDRAW_PSE ) {
     bhmMessage("I", "TFT_PSE", "Using polled, synchronized PSE drawing");
     while( 1 ) {
-      bhmWaitDelay(1000000/DVI_TARGET_FPS);
+      BUS0_AB0_data.IESR.value |= 1 << DVI_IESR_STATUS_OFFSET; //set IESR vsync status flag
       redrawCallback();
+      BUS0_AB0_data.IESR.value &= ~(1 << DVI_IESR_STATUS_OFFSET); //clear IESR vsync status flag
+      bhmWaitDelay(1000000/DVI_TARGET_FPS);
     }
   }
 

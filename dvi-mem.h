@@ -22,4 +22,23 @@
 #define DVI_REDRAW_PTHREAD              0
 #define DVI_REDRAW_PSE                  1
 
+#define DVI_AR_OFFSET                   0
+#define DVI_AR_ADDR                     DVI_BASE_ADDRESS+DVI_AR_OFFSET
+#define DVI_AR_ADDR_OFFSET              21 //TODO verify
+#define DVI_AR_ADDR_MASK                0xffe00000
+
+#define DVI_CR_OFFSET                   1
+#define DVI_CR_ADDR                     DVI_BASE_ADDRESS+DVI_CR_OFFSET
+#define DVI_CR_EN_OFFSET                0
+#define DVI_CR_EN_MASK                  (1 << DVI_CR_EN_OFFSET)
+#define DVI_CR_DSC_OFFSET               1
+#define DVI_CR_DSC_MASK                 (1 << DVI_CR_DSC_OFFSET)
+
+#define DVI_IESR_OFFSET                 2
+#define DVI_IESR_ADDR                   DVI_BASE_ADDRESS+DVI_IESR_OFFSET
+#define DVI_IESR_STATUS_OFFSET          0
+#define DVI_IESR_STATUS_MASK            (1 << DVI_IESR_STATUS_OFFSET)
+#define DVI_IESR_INTENABLE_OFFSET       3
+#define DVI_IESR_INTENABLE_MASK         (1 << DVI_IESR_INTENABLE_OFFSET)
+
 #endif //DVI_MEM

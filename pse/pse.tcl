@@ -29,6 +29,8 @@ iadddocumentation   -name Description -text "Xilinx XPS TFT Controller"
     imodeladdfield        -name ST  -bitoffset 31 -width 1 -access rw -mmregister BUS0/AB0/CCR
       iadddocumentation -name Description -text "Start transmission"
 
+  imodeladdnetport -name VSYNCINT -type output
+
   imodeladdbusslaveport -name VMEMBUS -size 0x400000 -remappable -mustbeconnected
     iadddocumentation -name Description -text "Video memory, sized 2MB"
   #imodeladdaddressblock -name VMEMAB  -size 0x400000 -port VMEMBUS -width 32 -offset 0

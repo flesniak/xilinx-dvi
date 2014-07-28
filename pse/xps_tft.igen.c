@@ -4,7 +4,7 @@
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
 //                             Version 20131018.0
-//                          Sat Jul 26 15:55:28 2014
+//                          Mon Jul 28 18:45:36 2014
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -118,11 +118,21 @@ static void installRegisters(void) {
 
 }
 
+/////////////////////////////////// Net Ports //////////////////////////////////
+
+static void installNetPorts(void) {
+// To write to this net, use ppmWriteNet(handles.VSYNCINT, value);
+
+    handles.VSYNCINT = ppmOpenNetPort("VSYNCINT");
+
+}
+
 ////////////////////////////////// Constructor /////////////////////////////////
 
 PPM_CONSTRUCTOR_CB(periphConstructor) {
     installSlavePorts();
     installRegisters();
+    installNetPorts();
 }
 
 ///////////////////////////////////// Main /////////////////////////////////////

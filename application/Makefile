@@ -14,7 +14,7 @@ endif
 
 IMPERAS_CC += -std=gnu99
 
-ASRC = application.c test-regs.c test-remap.c simple-colorchange.c
+ASRC = application.c test-regs.c test-remap.c simple-colorchange.c test-iesr.c
 AEXE = $(patsubst %.c,%.$(CROSS).elf,$(ASRC))
 
 all: $(AEXE)
