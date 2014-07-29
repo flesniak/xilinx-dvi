@@ -117,8 +117,8 @@ int main( int argc, char** argv ) {
   } else
     icmInit( ICM_INIT_DEFAULT | ICM_STOP_ON_CTRLC, 0, 0 );
 
-  const char* model = icmGetVlnvString( 0, "ovpworld.org", "processor", "or1k", "1.0", "model" );
-  const char* semihosting = icmGetVlnvString( 0, "ovpworld.org", "semihosting", "or1kNewlib", "1.0", "model" );
+  const char* model = icmGetVlnvString( 0, "xilinx.ovpworld.org", "processor", "microblaze", "1.0", "model" );
+  const char* semihosting = icmGetVlnvString( 0, "xilinx.ovpworld.org", "semihosting", "microblazeNewlib", "1.0", "model" );
 
   icmAttrListP userAttrs = icmNewAttrList();
   icmAddDoubleAttr(userAttrs, "mips", 800.0);
@@ -126,7 +126,7 @@ int main( int argc, char** argv ) {
 
   icmProcessorP processor1 = icmNewProcessor(
       "cpu1",             // CPU name
-      "or1k",             // CPU type
+      "microblaze",       // CPU type
       0,                  // CPU cpuId
       0,                  // CPU model flags
       32,                 // address bits
@@ -148,7 +148,7 @@ int main( int argc, char** argv ) {
     icmMemoryP mem1 = icmNewMemory( "mem1", ICM_PRIV_RWX, DVI_BASE_ADDRESS - 1 );
     icmConnectMemoryToBus( bus1, "port1", mem1, 0 );
 
-    //set big endian mode for or1k processor
+    //set big endian mode for or1k/microblaze processor
     icmAttrListP pseAttrs = icmNewAttrList();
     icmAddBoolAttr(pseAttrs, "bigEndianGuest", 1);
     //icmAddStringAttr(pseAttrs, "output", "dlo");

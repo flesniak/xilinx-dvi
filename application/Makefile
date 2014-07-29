@@ -6,7 +6,7 @@ include $(IMPERAS_HOME)/bin/Makefile.include
 #
 
 # Various Cross compiler setups, Default or1k
-CROSS?=OR1K
+CROSS?=MICROBLAZE
 -include $(IMPERAS_HOME)/lib/$(IMPERAS_ARCH)/CrossCompiler/$(CROSS).makefile.include
 ifeq ($($(CROSS)_CC),)
     IMPERAS_ERROR := $(error "Please install the $(CROSS) toolchain")
@@ -15,15 +15,18 @@ endif
 IMPERAS_CC += -std=gnu99
 
 ASRC = application.c test-regs.c test-remap.c simple-colorchange.c test-iesr.c
+ASRCINC?=microblaze_io.c
+
+AINCOBJ=$(patsubst %.c,%.$(CROSS).o,$(ASRCINC))
 AEXE = $(patsubst %.c,%.$(CROSS).elf,$(ASRC))
 
 all: $(AEXE)
 
-%.$(CROSS).elf: %.o
+%.$(CROSS).elf: %.$(CROSS).o $(AINCOBJ)
 	$(V)  echo "Linking $@"
-	$(V) $(IMPERAS_LINK) -o $@ $< $(IMPERAS_LDFLAGS) -lm
+	$(V) $(IMPERAS_LINK) -o $@ $^ $(IMPERAS_LDFLAGS) -lm
 
-%.o: %.c
+%.$(CROSS).o: %.c
 	$(V)  echo "Compiling $<"
 	$(V) $(IMPERAS_CC) -c -o $@ $<
 
