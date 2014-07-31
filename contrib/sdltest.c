@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -79,12 +78,16 @@ void advanceRainbow(state_e* state, unsigned char* r, unsigned char* g, unsigned
 }
 
 int main(int argc, char** argv) {
-  if( SDL_Init(SDL_INIT_VIDEO) )
+  if( SDL_Init(SDL_INIT_VIDEO) ) {
     printf("Couldn't initialize SDL: %s\n", SDL_GetError());
+    return 1;
+  }
 
   SDL_Surface* surf1 = SDL_SetVideoMode(640, 480, 0, SDL_SWSURFACE);
-  if( !surf1 )
+  if( !surf1 ) {
     printf("Couldn't initialize surface: %s\n", SDL_GetError());
+    return 1;
+  }
   printf("Filling surf1 and updating. Display should turn blue now\n");
   SDL_FillRect(surf1, 0, SDL_MapRGB(surf1->format, 0, 0, 0xff));
   printf("PixelFormat of surf1:\n");
@@ -94,13 +97,17 @@ int main(int argc, char** argv) {
   usleep(300000);
 
   SDL_Surface* surf2 = SDL_CreateRGBSurface(SDL_SWSURFACE, 640, 480, 32, 0x003f0000, 0x00003f00, 0x0000003f, 0);
-  if( !surf2 )
+  if( !surf2 ) {
     printf("Couldn't initialize tft surface: %s\n", SDL_GetError());
+    return 1;
+  }
   printf("Filling surf2, blitting to surf1 and updating. Display should turn red now\n");
   SDL_FillRect(surf2, 0, SDL_MapRGB(surf2->format, 0xff, 0, 0));
   int err;
-  if( (err = SDL_BlitSurface(surf2, 0, surf1, 0)) )
+  if( (err = SDL_BlitSurface(surf2, 0, surf1, 0)) ) {
     printf("Surface blit failed (%d)", err);
+    return 1;
+  }
   printf("PixelFormat of surf2:\n");
   dumpFormat(surf2->format);
   surfDump(surf2, 16);
@@ -112,8 +119,10 @@ int main(int argc, char** argv) {
   for( unsigned int y = 0; y < 480; y++ )
     for( unsigned int x = 0; x < 640; x++ )
       setPixel(surf2, x, y, 0, 255, 0);
-  if( (err = SDL_BlitSurface(surf2, 0, surf1, 0)) )
+  if( (err = SDL_BlitSurface(surf2, 0, surf1, 0)) ) {
     printf("Surface blit failed (%d)", err);
+    return 1;
+  }
   surfDump(surf2, 16);
   surfDump(surf1, 16);
   SDL_UpdateRect(surf1, 0, 0, 0, 0);
@@ -123,9 +132,7 @@ int main(int argc, char** argv) {
   state_e ff_rainbowState = blueDown, f_rainbowState, rainbowState;
   unsigned char ff_r = 0, ff_g = 0xff, ff_b = 0xff, f_r, f_g, f_b, r, g, b;
 
-  SDL_Event event;
-  bool run = true;
-  while( run ) {
+  while( 1 ) {
     f_r = ff_r; f_g = ff_g; f_b = ff_b;
     f_rainbowState = ff_rainbowState;
     advanceRainbow(&ff_rainbowState, &ff_r, &ff_g, &ff_b);
@@ -152,16 +159,6 @@ int main(int argc, char** argv) {
     }
     SDL_UpdateRect(surf1, 0, 0, 0, 0);
     usleep(10000);
-    while( SDL_PollEvent(&event) ) {
-      switch( event.type ) {
-        case SDL_QUIT:
-          printf("Quit.\n");
-          run = false;
-          break;
-        default:
-          printf("Unhandled SDL_Event\n");
-      }
-    }
   }
 
   SDL_FreeSurface(surf1);
