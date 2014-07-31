@@ -132,6 +132,8 @@ int main(int argc, char** argv) {
   state_e ff_rainbowState = blueDown, f_rainbowState, rainbowState;
   unsigned char ff_r = 0, ff_g = 0xff, ff_b = 0xff, f_r, f_g, f_b, r, g, b;
 
+  SDL_Event event;
+  bool run = true;
   while( 1 ) {
     f_r = ff_r; f_g = ff_g; f_b = ff_b;
     f_rainbowState = ff_rainbowState;
@@ -159,6 +161,16 @@ int main(int argc, char** argv) {
     }
     SDL_UpdateRect(surf1, 0, 0, 0, 0);
     usleep(10000);
+    while( SDL_PollEvent(&event) ) {
+      switch( event.type ) {
+        case SDL_QUIT:
+          printf("Quit.\n");
+          run = false;
+          break;
+        default:
+          printf("Unhandled SDL_Event\n");
+      }
+    }
   }
 
   SDL_FreeSurface(surf1);
