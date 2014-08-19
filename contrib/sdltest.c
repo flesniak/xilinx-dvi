@@ -89,6 +89,14 @@ int main(int argc, char** argv) {
     printf("Couldn't initialize surface: %s\n", SDL_GetError());
     return 1;
   }
+
+  char buf[16];
+  if( !SDL_VideoDriverName(buf, 16) ) {
+    printf("Couldn't get video driver name\n");
+    return 1;
+  }
+  printf("SDL_VideoDriver: %s\n", buf);
+
   printf("Filling surf1 and updating. Display should turn blue now\n");
   SDL_FillRect(surf1, 0, SDL_MapRGB(surf1->format, 0, 0, 0xff));
   printf("PixelFormat of surf1:\n");
@@ -135,7 +143,7 @@ int main(int argc, char** argv) {
 
   SDL_Event event;
   bool run = true;
-  while( 1 ) {
+  while( run ) {
     f_r = ff_r; f_g = ff_g; f_b = ff_b;
     f_rainbowState = ff_rainbowState;
     advanceRainbow(&ff_rainbowState, &ff_r, &ff_g, &ff_b);
