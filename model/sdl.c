@@ -8,7 +8,7 @@ void sdlInit(sdlObject* object, unsigned char* framebuffer) {
   if( SDL_Init(SDL_INIT_VIDEO) )
     vmiMessage("F", "TFT_SH", "Couldn't initialize SDL: %s\n", SDL_GetError());
 
-  object->surface = SDL_SetVideoMode(640, 480, 0, SDL_SWSURFACE);
+  object->surface = SDL_SetVideoMode(DVI_OUTPUT_HEIGHT, DVI_OUTPUT_WIDTH, 0, SDL_SWSURFACE);
   if( !object->surface )
     vmiMessage("F", "TFT_SH", "Couldn't initialize surface: %s\n", SDL_GetError());
   SDL_FillRect(object->surface, 0, SDL_MapRGB(object->surface->format, 0, 0, 0));

@@ -19,7 +19,7 @@ typedef _Bool bool;
 static bool bigEndianGuest;
 static unsigned int redrawMode;
 
-Uns32 initDisplay(Uns32 bigEndianGuest, Uns32 output, Uns32 redrawMode) {
+Uns32 initDisplay(Uns32 output, Uns32 redrawMode, Uns32 bigEndianGuest) {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : initDisplay()");
   return 0;
 }
@@ -119,24 +119,25 @@ PPM_CONSTRUCTOR_CB(constructor) {
   if( !bhmStringAttribute("output", output, 4) )
     bhmMessage("W", "TFT_PSE", "Reading output attribute failed");
   if( output[0] == 0 ) //default if no output attribute is set
-    strcpy(output, "sdl");
+    strcpy(output, DVI_OUTPUT_STR_SDL);
   Uns32 outputNum = DVI_OUTPUT_SDL;
-  if( !strcmp(output, "sdl") )
+  if( !strcmp(output, DVI_OUTPUT_STR_SDL) )
     outputNum = DVI_OUTPUT_SDL;
   else {
-    if( !strcmp(output, "dlo") ) {
+    if( !strcmp(output, DVI_OUTPUT_STR_DLO) )
       outputNum = DVI_OUTPUT_DLO;
-      bhmMessage("W", "TFT_PSE", "DLO output mode is not implemented yet");
-    } else
+    else
       bhmMessage("F", "TFT_PSE", "Invalid output requested: %s", output);
   }
 
   redrawMode = DVI_REDRAW_PTHREAD;
-  if( !bhmIntegerAttribute("polledRedraw", &redrawMode) )
-    bhmMessage("W", "TFT_PSE", "Reading polledRedraw attribute failed");
+  if( !bhmIntegerAttribute("polledRedraw", &redrawMode) ) {
+    bhmMessage("W", "TFT_PSE", "Reading polledRedraw attribute failed, using threaded redraw");
+    redrawMode = DVI_REDRAW_PTHREAD;
+  }
 
   bhmMessage("I", "TFT_PSE", "Initializing display initDisplay()");
-  Uns32 success = initDisplay(bigEndianGuest, outputNum, redrawMode);
+  Uns32 success = initDisplay(outputNum, redrawMode, bigEndianGuest);
 
   if( success )
     bhmMessage("I", "TFT_PSE", "Display initialized successfully");

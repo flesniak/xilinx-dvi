@@ -3,6 +3,8 @@
 
 #define DVI_BASE_ADDRESS                0x80000000U
 #define DVI_CONTROL_REGS_SIZE           16U
+
+//The following values define the layout of the framebuffer memory used by the xilinx xps tft controller
 #define DVI_VMEM_ADDRESS                DVI_BASE_ADDRESS+DVI_CONTROL_REGS_SIZE
 #define DVI_VMEM_SIZE                   0x400000U //1024x576 pixels 32bpp 0xggbbrraa (notation in little endian)
 #define DVI_VMEM_HEIGHT                 1024
@@ -14,13 +16,19 @@
 #define DVI_VMEM_GMASK                  0x003f0000
 #define DVI_VMEM_BMASK                  0x3f000000
 
+//despite the framebuffer itself is bigger, we only use/process the 640x480 portion of it (parameters like BPP and masks are same as above)
+#define DVI_OUTPUT_WIDTH                640
+#define DVI_OUTPUT_HEIGHT               480
+
 #define DVI_REGS_BUS_NAME               "BUS0"
 #define DVI_VMEM_BUS_NAME               "VMEMBUS"
 
 #define DVI_TARGET_FPS 25
 
 #define DVI_OUTPUT_SDL                  0
+#define DVI_OUTPUT_STR_SDL              "sdl"
 #define DVI_OUTPUT_DLO                  1
+#define DVI_OUTPUT_STR_DLO              "dlo"
 #define DVI_REDRAW_PTHREAD              0
 #define DVI_REDRAW_PSE                  1
 

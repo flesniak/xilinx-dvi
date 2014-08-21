@@ -11,11 +11,12 @@
 #include <pthread.h>
 
 #include <vmi/vmiMessage.h>
-#include <vmi/vmiTypes.h>
 #include <vmi/vmiOSAttrs.h>
 #include <vmi/vmiOSLib.h>
 #include <vmi/vmiPSE.h>
+#include <vmi/vmiTypes.h>
 
+#include "dlo.h"
 #include "sdl.h"
 #include "../dvi-mem.h"
 
@@ -31,7 +32,7 @@ typedef struct vmiosObjectS {
   unsigned char* framebuffer;
 
   //output mode parameters
-  enum outputModuleE { sdl = 0, dlo = 1 } outputModule;
+  enum outputModuleE { sdl = DVI_OUTPUT_SDL, dlo = DVI_OUTPUT_DLO } outputModule;
   int redrawMode;
   pthread_t redrawThread;
   int redrawThreadState;
@@ -42,6 +43,7 @@ typedef struct vmiosObjectS {
   int vsyncState;
   
   //output module structs
+  dloObject* dlo;
   sdlObject* sdl;
 } vmiosObject;
 
@@ -67,7 +69,7 @@ inline static void drawDisplay(vmiosObjectP object) {
       sdlUpdate(object->sdl);
       break;
     case dlo :
-      vmiMessage("W", "TFT_SH", "DLO output draw calls not implemented yet");
+      dloUpdate(object->dlo);
       break;
   }
 }
@@ -113,18 +115,28 @@ void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 ne
 }
 
 static VMIOS_INTERCEPT_FN(initDisplay) {
+  //initialize object struct
   Uns32 index = 0;
-  GET_ARG(processor, object, index, object->bigEndianGuest);
+  object->vmemBaseAddr = 0;
+  object->framebuffer = calloc(1, DVI_VMEM_SIZE);
   GET_ARG(processor, object, index, object->outputModule);
   GET_ARG(processor, object, index, object->redrawMode);
-  
-  if( object->bigEndianGuest ) {
+  object->redrawThread = 0;
+  object->redrawThreadState = 0;
+  GET_ARG(processor, object, index, object->bigEndianGuest);
+  object->enableVsyncInterrupt = 0;
+  object->vsyncState = 0;
+  object->dlo = 0;
+  object->sdl = 0;
+
+  vmiMessage("I", "TFT_SH", "prms: outputModule 0x%08x redrawMode 0x%08x bigEndianGuest 0x%08x", (Uns32)object->outputModule, (Uns32)object->redrawMode, (Uns32)object->bigEndianGuest);
+
+  //byte swapping does not seem to necessary between pse and semihost
+  /*if( object->bigEndianGuest ) {
     vmiMessage("I", "TFT_SH", "working with big-endian guest");
     object->outputModule = bswap_32(object->outputModule);
     object->redrawMode = bswap_32(object->redrawMode);
-  }
-
-  object->framebuffer = calloc(1, DVI_VMEM_SIZE);
+  }*/
 
   switch( object->outputModule ) {
     case sdl :
@@ -132,7 +144,8 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
       sdlInit(object->sdl, object->framebuffer);
       break;
     case dlo :
-      vmiMessage("W", "TFT_SH", "DLO output not implemented yet, falling back to SDL");
+      object->dlo = calloc(1, sizeof(dloObject));
+      dloInit(object->dlo, object->framebuffer);
       break;
     default :
       vmiMessage("F", "TFT_SH", "Unknown output module %d selected", (Uns32)object->outputModule);
@@ -150,6 +163,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
 
   retArg(processor, object, 1); //return success
 }
+
 static VMIOS_INTERCEPT_FN(configureDisplay) {
   Uns32 enable = 0, scanDirection = 0, index = 0;
   GET_ARG(processor, object, index, enable);
@@ -210,15 +224,15 @@ static VMIOS_CONSTRUCTOR_FN(destructor) {
   pthread_join(object->redrawThread, 0);
   switch( object->outputModule ) {
     case sdl :
-      object->sdl = calloc(1, sizeof(sdlObject));
-      sdlInit(object->sdl, object->framebuffer);
+      sdlFinish(object->sdl);
+      free(object->sdl);
       break;
     case dlo :
-      vmiMessage("W", "TFT_SH", "DLO output not implemented yet, falling back to SDL");
+      dloFinish(object->dlo);
+      free(object->dlo);
       break;
-    default :
-      vmiMessage("F", "TFT_SH", "Unknown output module %d selected", (Uns32)object->outputModule);
   }
+  free(object->framebuffer);
 }
 
 vmiosAttr modelAttrs = {

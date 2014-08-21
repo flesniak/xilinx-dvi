@@ -151,7 +151,7 @@ int main( int argc, char** argv ) {
     //set big endian mode for or1k/microblaze processor
     icmAttrListP pseAttrs = icmNewAttrList();
     icmAddBoolAttr(pseAttrs, "bigEndianGuest", 1);
-    //icmAddStringAttr(pseAttrs, "output", "dlo");
+    icmAddStringAttr(pseAttrs, "output", DVI_OUTPUT_STR_DLO);
     //icmAddUns32Attr(pseAttrs, "polledRedraw", DVI_REDRAW_PSE);
 
     //memory from DVI_BASE_ADDRESS to DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1; map dvi peripheral to memory hole
