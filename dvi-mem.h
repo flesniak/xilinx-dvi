@@ -4,16 +4,18 @@
 #define DVI_BASE_ADDRESS                0x80000000U
 #define DVI_CONTROL_REGS_SIZE           16U
 #define DVI_VMEM_ADDRESS                DVI_BASE_ADDRESS+DVI_CONTROL_REGS_SIZE
-#define DVI_VMEM_SIZE                   0x400000U
-
-#define DVI_REGS_BUS_NAME               "BUS0"
-#define DVI_VMEM_BUS_NAME               "VMEMBUS"
-
+#define DVI_VMEM_SIZE                   0x400000U //1024x576 pixels 32bpp 0xggbbrraa (notation in little endian)
+#define DVI_VMEM_HEIGHT                 1024
+#define DVI_VMEM_WIDTH                  512
 #define DVI_VMEM_BYTES_PER_PIXEL        4
+#define DVI_VMEM_BITS_PER_PIXEL         DVI_VMEM_BYTES_PER_PIXEL*8
 #define DVI_VMEM_SCANLINE               1024*DVI_VMEM_BYTES_PER_PIXEL
 #define DVI_VMEM_RMASK                  0x00003f00
 #define DVI_VMEM_GMASK                  0x003f0000
 #define DVI_VMEM_BMASK                  0x3f000000
+
+#define DVI_REGS_BUS_NAME               "BUS0"
+#define DVI_VMEM_BUS_NAME               "VMEMBUS"
 
 #define DVI_TARGET_FPS 25
 
