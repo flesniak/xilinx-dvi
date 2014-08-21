@@ -80,7 +80,7 @@ void advanceRainbow(state_e* state, unsigned char* r, unsigned char* g, unsigned
   }
 }
 
-int main(int argc, char** argv) {
+int main() {
   //Initialize libdlo, claim device and get current mode
   dlo_init_t initFlags;
   dlo_retcode_t err = dlo_init(initFlags);
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 
   dlo_mode_t* displayMode = dlo_get_mode(dev);
   if( 0 ) { //activate to set display to 640x480
-    dlo_mode_t mode = { .view = {.width = 640, .height = 480, .bpp = (*displayMode).view.bpp, .base = (*displayMode).view.base}, .refresh = 0 };
+    dlo_mode_t mode = { .view = {.width = 640, .height = 480, .bpp = displayMode->view.bpp, .base = displayMode->view.base}, .refresh = 0 };
     err = dlo_set_mode(dev, &mode);
     if( err != dlo_ok ) {
       printf("Failed to set mode: %s\n", dlo_strerror(err));
@@ -115,8 +115,8 @@ int main(int argc, char** argv) {
   }
   usleep(500000);
 
-  printf("filling screen green (native view width %d height %d bpp %d base 0x%08x, no rect)\n", (*displayMode).view.width, (*displayMode).view.height, (*displayMode).view.bpp, (*displayMode).view.base);
-  err = dlo_fill_rect(dev, &(*displayMode).view, 0 , DLO_RGB(0, 0xff, 0));
+  printf("filling screen green (native view width %d height %d bpp %d base 0x%08x, no rect)\n", displayMode->view.width, displayMode->view.height, displayMode->view.bpp, displayMode->view.base);
+  err = dlo_fill_rect(dev, &displayMode->view, 0 , DLO_RGB(0, 0xff, 0));
   if( err != dlo_ok ) {
     printf("Failed to fill rect: %s\n", dlo_strerror(err));
     goto end;
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
 
   dlo_rect_t rect = { .origin = { .x = 0, .y = 0 }, .width = 640, .height = 480 };
   printf("filling custom mode blue (native view, rect x %d y %d width %d height %d)\n", rect.origin.x, rect.origin.y, rect.width, rect.height);
-  err = dlo_fill_rect(dev, &(*displayMode).view, &rect, DLO_RGB(0, 0, 0xff));
+  err = dlo_fill_rect(dev, &displayMode->view, &rect, DLO_RGB(0, 0, 0xff));
   if( err != dlo_ok ) {
     printf("Failed to fill rect: %s\n", dlo_strerror(err));
     goto end;
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
       *(vmem+(640*y+x)) = DLO_RGB(0xff, 0, 0);
   }
   dlo_dot_t dot = {640,0};
-  err = dlo_copy_host_bmp(dev, bmpFlags, &fbuf, &(*displayMode).view, &dot);
+  err = dlo_copy_host_bmp(dev, bmpFlags, &fbuf, &displayMode->view, &dot);
   if( err != dlo_ok ) {
     printf("Failed to copy host bmp: %s\n", dlo_strerror(err));
     goto end;
@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
     for( unsigned int x = 480; x < 640; x++ )
       *(vmem+(640*y+x)) = 0;
 
-  err = dlo_copy_host_bmp(dev, bmpFlags, &fbuf, &(*displayMode).view, &dot);
+  err = dlo_copy_host_bmp(dev, bmpFlags, &fbuf, &displayMode->view, &dot);
 
   state_e ff_rainbowState = blueDown, f_rainbowState, rainbowState;
   unsigned char ff_r = 0, ff_g = 0xff, ff_b = 0xff, f_r, f_g, f_b, r, g, b;
@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
         advanceRainbow(&rainbowState, &r, &g, &b);
       }
     }
-    err = dlo_copy_host_bmp(dev, bmpFlags, &fbuf, &(*displayMode).view, 0);
+    err = dlo_copy_host_bmp(dev, bmpFlags, &fbuf, &displayMode->view, 0);
     if( err != dlo_ok ) {
       printf("Failed to copy host bmp: %s\n", dlo_strerror(err));
       run = false;
