@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <SDL.h>
@@ -143,6 +144,10 @@ int main(int argc, char** argv) {
 
   SDL_Event event;
   bool run = true;
+  time_t startTime = time(0);
+  time_t currentTime = startTime;
+  time_t newTime = startTime;
+  unsigned int frames = 0;
   while( run ) {
     f_r = ff_r; f_g = ff_g; f_b = ff_b;
     f_rainbowState = ff_rainbowState;
@@ -169,7 +174,15 @@ int main(int argc, char** argv) {
       }
     }
     SDL_UpdateRect(surf1, 0, 0, 0, 0);
-    usleep(10000);
+    //usleep(10000);
+    frames++;
+    newTime = time(0);
+    if( currentTime != newTime ) {
+      float fps = (float)frames/(newTime-startTime);
+      printf("\rfps: %#6.2f", fps);
+      fflush(stdout);
+      currentTime = newTime;
+    }
     while( SDL_PollEvent(&event) ) {
       switch( event.type ) {
         case SDL_QUIT:
