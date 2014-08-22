@@ -41,6 +41,8 @@ typedef struct vmiosObjectS {
   bool bigEndianGuest;
   int enableVsyncInterrupt;
   int vsyncState;
+  int enableDisplay;
+  int scanDirection;
   
   //output module structs
   dloObject* dlo;
@@ -78,12 +80,13 @@ static void* drawDisplayThread(void* objectV) {
   vmiosObjectP object = (vmiosObjectP)objectV;
   object->redrawThreadState = 1; //thread is running
   while( object->redrawThreadState == 1 ) {
-    //surfDump(object->tftSurface, 64);
-    object->vsyncState = 1;
-    drawDisplay(object);
-    object->vsyncState = 0;
-    if( object->enableVsyncInterrupt );
-      //TODO write interrupt net VSYNCINT
+    if( object->enableDisplay ) {
+      object->vsyncState = 1;
+      drawDisplay(object);
+      object->vsyncState = 0;
+      if( object->enableVsyncInterrupt );
+        //TODO write interrupt net VSYNCINT
+    }
     usleep(1000000/DVI_TARGET_FPS);
   }
   object->redrawThreadState = 0; //thread is stopped
@@ -126,6 +129,8 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   GET_ARG(processor, object, index, object->bigEndianGuest);
   object->enableVsyncInterrupt = 0;
   object->vsyncState = 0;
+  object->enableDisplay = DVI_DISPLAY_ENABLED;
+  object->scanDirection = DVI_SCAN_TOP_BOTTOM;
   object->dlo = 0;
   object->sdl = 0;
 
@@ -165,12 +170,22 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
 }
 
 static VMIOS_INTERCEPT_FN(configureDisplay) {
-  Uns32 enable = 0, scanDirection = 0, index = 0;
-  GET_ARG(processor, object, index, enable);
-  GET_ARG(processor, object, index, scanDirection);
-  if( object->bigEndianGuest )
-    object->bigEndianGuest = bswap_32(object->bigEndianGuest);
-  vmiMessage("W", "TFT_SH", "configureDisplay unimplemented");
+  Uns32 index = 0;
+  GET_ARG(processor, object, index, object->enableDisplay);
+  GET_ARG(processor, object, index, object->scanDirection);
+  vmiMessage("I", "TFT_SH", "configureDisplay enable 0x%08x scanDirection 0x%08x, did not convert yet", object->enableDisplay, object->scanDirection);
+  if( object->bigEndianGuest ) {
+    object->enableDisplay = bswap_32(object->enableDisplay);
+    object->scanDirection = bswap_32(object->scanDirection);
+  }
+  switch( object->outputModule ) {
+    case sdl :
+      sdlConfigure(object->sdl, object->scanDirection);
+      break;
+    case dlo :
+      dloConfigure(object->dlo, object->scanDirection);
+      break;
+  }
 }
 
 static VMIOS_INTERCEPT_FN(mapExternalVmem) {

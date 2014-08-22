@@ -2,6 +2,7 @@
 #include "../dvi-mem.h"
 
 #include <vmi/vmiMessage.h>
+#include <byteswap.h>
 
 void dloInit(dloObject* object, unsigned char* framebuffer) {
   vmiMessage("I", "TFT_SH", "Initializing DLO output module");
@@ -32,8 +33,11 @@ void dloInit(dloObject* object, unsigned char* framebuffer) {
   object->fbuf.width = DVI_OUTPUT_WIDTH;
   object->fbuf.height = DVI_OUTPUT_HEIGHT;
   object->fbuf.fmt = dlo_pixfmt_abgr8888;
-  object->fbuf.base = framebuffer;
+  object->fbuf.base = malloc(DVI_OUTPUT_WIDTH*DVI_OUTPUT_HEIGHT*DVI_VMEM_BYTES_PER_PIXEL);
   object->fbuf.stride = DVI_VMEM_WIDTH;
+
+  object->framebuffer = (uint32_t*)framebuffer;
+  object->scanDirection = DVI_SCAN_TOP_BOTTOM;
 }
 
 void dloFinish(dloObject* object) {
@@ -46,12 +50,34 @@ void dloFinish(dloObject* object) {
   err = dlo_final(finalFlags);
   if( err != dlo_ok )
     vmiMessage("F", "TFT_SH", "Failed to free DisplayLink library: %s\n", dlo_strerror(err));
+
+  free(object->fbuf.base);
 }
 
 void dloUpdate(dloObject* object) {
   vmiMessage("I", "TFT_SH", "DLO redrawing");
+  dloConvertPixels(object);
   dlo_bmpflags_t bmpFlags = {0};
   dlo_retcode_t err = dlo_copy_host_bmp(object->dev, bmpFlags, &object->fbuf, &object->mode->view, 0);
   if( err != dlo_ok )
     vmiMessage("W", "TFT_SH", "Failed to copy host bmp: %s\n", dlo_strerror(err));
+}
+
+void dloConfigure(dloObject* object, int scanDirection) {
+  object->scanDirection = scanDirection;
+}
+
+void dloConvertPixels(dloObject* object) {
+  for( unsigned int y = 0; y < DVI_OUTPUT_HEIGHT; y++ )
+    for( unsigned int x = 0; x < DVI_OUTPUT_WIDTH; x++ ) {
+      uint32_t* srcPixel = object->framebuffer+DVI_VMEM_WIDTH*y+x;
+      uint32_t* dstPixel;
+      if( object->scanDirection == DVI_SCAN_BOTTOM_TOP )
+        dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*(DVI_OUTPUT_HEIGHT-1-y)-x;
+      else
+        dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*y+x;
+      *dstPixel = *srcPixel >> 6;
+      //if( !(x+y) )
+      //  vmiMessage("I", "TFT_SH", "x %d y %d src 0x%08x dst 0x%08x src 0x%08x dst 0x%08x", x, y, (uint32_t)srcPixel, (uint32_t)dstPixel, *srcPixel, *dstPixel);
+    }
 }

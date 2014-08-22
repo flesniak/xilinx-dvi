@@ -6,11 +6,13 @@
 typedef struct sdlObjectS {
   SDL_Surface* surface;
   SDL_Surface* tftSurface;
+  int scanDirection;
 } sdlObject;
 
 void sdlInit(sdlObject* object, unsigned char* framebuffer);
 void sdlFinish(sdlObject* object);
 void sdlUpdate(sdlObject* object);
+void sdlConfigure(sdlObject* object, int scanDirection);
 
 void surfDump(SDL_Surface* surf, unsigned int n);
 
