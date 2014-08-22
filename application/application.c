@@ -23,7 +23,7 @@
 #include "../dvi-mem.h"
 
 void setPixel(unsigned char* vmem, unsigned short x, unsigned short y, unsigned char r, unsigned char g, unsigned char b) {
-  unsigned char* pixel = vmem + (DVI_VMEM_SCANLINE*y + x*DVI_VMEM_BYTES_PER_PIXEL);
+  unsigned char* pixel = vmem + (DVI_VMEM_SCANLINE_BYTES*y + x*DVI_VMEM_BYTES_PER_PIXEL);
   pixel[1] = r>>2;
   pixel[2] = g>>2;
   pixel[3] = b>>2;

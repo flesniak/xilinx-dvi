@@ -22,8 +22,10 @@
 
 #include "../dvi-mem.h"
 
+#define DELAY 1000000
+
 void setPixel(unsigned char* vmem, unsigned short x, unsigned short y, unsigned char r, unsigned char g, unsigned char b) {
-  unsigned char* pixel = vmem + (DVI_VMEM_SCANLINE*y + x*DVI_VMEM_BYTES_PER_PIXEL);
+  unsigned char* pixel = vmem + (DVI_VMEM_SCANLINE_BYTES*y + x*DVI_VMEM_BYTES_PER_PIXEL);
   pixel[1] = r>>2;
   pixel[2] = g>>2;
   pixel[3] = b>>2;
@@ -32,7 +34,7 @@ void setPixel(unsigned char* vmem, unsigned short x, unsigned short y, unsigned 
 //100 MIPS = 100 kIPms = 100 IPµs
 void usleep(unsigned int us) {
   while( us ) {
-    for(volatile unsigned char i = 0; i < 40; i++); //this loop takes ~100 instructions
+    for(volatile unsigned char i = 0; i < 80; i++); //this loop takes ~100 instructions
     us--;
   }
 }
@@ -46,19 +48,19 @@ int main() {
     for( unsigned int y = 0; y < 480; y++ )
       for( unsigned int x = 0; x < 640; x++ )
         setPixel(vmem, x, y, 255, 0, 0);
-    usleep(1000000); //should be ~1 sec
+    usleep(DELAY); //should be ~1 sec
 
     printf("Filling the screen green.\n");
     for( unsigned int y = 0; y < 480; y++ )
       for( unsigned int x = 0; x < 640; x++ )
         setPixel(vmem, x, y, 0, 255, 0);
-    usleep(1000000); //should be ~1 sec
+    usleep(DELAY); //should be ~1 sec
 
     printf("Filling the screen blue.\n");
     for( unsigned int y = 0; y < 480; y++ )
       for( unsigned int x = 0; x < 640; x++ )
         setPixel(vmem, x, y, 0, 0, 255);
-    usleep(1000000); //should be ~1 sec
+    usleep(DELAY); //should be ~1 sec
   }
 
   return 0;
