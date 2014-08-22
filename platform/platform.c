@@ -16,7 +16,7 @@ static struct optionsS {
   icmNewProcAttrs processorAttributes;
   unsigned int memorySize; //MiB
   int instructionCount;
-  int display;
+  char* display;
   double wallclockFactor;
   char* program;
 } options = { 1, ICM_ATTR_DEFAULT, UINT_MAX, INSTRUCTION_COUNT_DEFAULT, 0, 0, 0 };
@@ -28,7 +28,7 @@ void usage( char* argv0 ) {
   fprintf( stderr, "  -m memsize           | attach a memory of size memsize instead of the implicite one\n" );
   fprintf( stderr, "  -i instructions      | simulate instructions at once (default 100000)\n" );
   fprintf( stderr, "  -w factor            | set wallclock factor \n" );
-  fprintf( stderr, "  -d                   | enable dvi display\n" );
+  fprintf( stderr, "  -d sdl|dlo           | enable dvi display\n" );
   fprintf( stderr, "  <program.elf>        | program file to simulate\n" );
   exit( 1 );
 }
@@ -37,7 +37,7 @@ void parseOptions( int argc, char** argv ) {
   int c;
   opterr = 0;
 
-  while( ( c = getopt( argc, argv, "vt:m:i:w:d" ) ) != -1 )
+  while( ( c = getopt( argc, argv, "vt:m:i:w:d:" ) ) != -1 )
     switch( c ) {
       case 'v':
         options.verbosity++;
@@ -88,7 +88,7 @@ void parseOptions( int argc, char** argv ) {
           fprintf( stderr, "Options -d and -m are not compatible\n" );
           usage( argv[0] );
         }
-        options.display = 1;
+        options.display = optarg;
         break;
       case '?':
         if( optopt == 't' || optopt == 'm' || optopt == 'i' )
@@ -151,7 +151,7 @@ int main( int argc, char** argv ) {
     //set big endian mode for or1k/microblaze processor
     icmAttrListP pseAttrs = icmNewAttrList();
     icmAddBoolAttr(pseAttrs, "bigEndianGuest", 1);
-    icmAddStringAttr(pseAttrs, "output", DVI_OUTPUT_STR_DLO);
+    icmAddStringAttr(pseAttrs, "output", options.display);
     //icmAddUns32Attr(pseAttrs, "polledRedraw", DVI_REDRAW_PSE);
 
     //memory from DVI_BASE_ADDRESS to DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1; map dvi peripheral to memory hole
