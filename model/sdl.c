@@ -8,14 +8,14 @@ void sdlInit(sdlObject* object, unsigned char* framebuffer) {
   if( SDL_Init(SDL_INIT_VIDEO) )
     vmiMessage("F", "TFT_SH", "Couldn't initialize SDL: %s\n", SDL_GetError());
 
-  object->surface = SDL_SetVideoMode(DVI_OUTPUT_HEIGHT, DVI_OUTPUT_WIDTH, 0, SDL_SWSURFACE);
+  object->surface = SDL_SetVideoMode(DVI_OUTPUT_WIDTH, DVI_OUTPUT_HEIGHT, 0, SDL_SWSURFACE);
   if( !object->surface )
     vmiMessage("F", "TFT_SH", "Couldn't initialize surface: %s\n", SDL_GetError());
   SDL_FillRect(object->surface, 0, SDL_MapRGB(object->surface->format, 0, 0, 0));
   SDL_UpdateRect(object->surface, 0, 0, 0, 0);
 
   //create a surface matching the pixel format of the xilinx tft controller using the supplied framebuffer as pixel storage
-  object->tftSurface = SDL_CreateRGBSurfaceFrom(framebuffer, DVI_VMEM_HEIGHT, DVI_VMEM_WIDTH, DVI_VMEM_BITS_PER_PIXEL, DVI_VMEM_SCANLINE, DVI_VMEM_RMASK, DVI_VMEM_GMASK, DVI_VMEM_BMASK, 0);
+  object->tftSurface = SDL_CreateRGBSurfaceFrom(framebuffer, DVI_VMEM_WIDTH, DVI_VMEM_HEIGHT, DVI_VMEM_BITS_PER_PIXEL, DVI_VMEM_SCANLINE, DVI_VMEM_RMASK, DVI_VMEM_GMASK, DVI_VMEM_BMASK, 0);
   if( !object->tftSurface )
     vmiMessage("F", "TFT_SH", "Couldn't initialize tft surface: %s\n", SDL_GetError());
   SDL_FillRect(object->tftSurface, 0, SDL_MapRGB(object->tftSurface->format, 0, 0, 0));
