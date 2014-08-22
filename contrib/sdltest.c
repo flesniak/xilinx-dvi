@@ -79,7 +79,7 @@ void advanceRainbow(state_e* state, unsigned char* r, unsigned char* g, unsigned
   }
 }
 
-int main(int argc, char** argv) {
+int main() {
   if( SDL_Init(SDL_INIT_VIDEO) ) {
     printf("Couldn't initialize SDL: %s\n", SDL_GetError());
     return 1;
