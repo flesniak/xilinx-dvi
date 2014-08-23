@@ -122,6 +122,7 @@ int main( int argc, char** argv ) {
 
   icmAttrListP userAttrs = icmNewAttrList();
   icmAddDoubleAttr(userAttrs, "mips", 800.0);
+  //icmAddUns32Attr(userAttrs, "C_ENDIANNESS", 0); //microblaze is big-endian by default
   //icmAddStringAttr(userAttrs, "endian", "little"); //or1k toolchain does not seem to support little endian
 
   icmProcessorP processor1 = icmNewProcessor(

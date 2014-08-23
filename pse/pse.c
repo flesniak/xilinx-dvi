@@ -83,24 +83,22 @@ PPM_REG_WRITE_CB(writeReg) {
   Uns32 reg = (Uns32)user;
   switch( reg ) {
     case 0 : //address register
-      bhmMessage("D", "TFT_PSE", "VRAM address change to 0x%08x requested, remapping", data);
+      bhmMessage("D", "TFT_PSE", "Write to AR at 0x%08x data 0x%08x", (Uns32)addr, data);
       BUS0_AB0_data.AR.value = bigEndianGuest ? bswap_32(data) : data;
-      mapExternalVmem(data);
+      mapExternalVmem(BUS0_AB0_data.AR.value);
       break;
     case 1 : //control register
-      bhmMessage("I", "TFT_PSE", "Write to control register for %d bytes at 0x%08x data 0x%08x", bytes, (Uns32)addr, data);
-      configureDisplay(data & 1, data >> 1 & 1);
+      bhmMessage("I", "TFT_PSE", "Write to CR at 0x%08x data 0x%08x", (Uns32)addr, data);
       BUS0_AB0_data.CR.value = bigEndianGuest ? bswap_32(data) : data;
+      configureDisplay(BUS0_AB0_data.CR.value & DVI_CR_EN_MASK, BUS0_AB0_data.CR.value & DVI_CR_DSC_MASK);
       break;
     case 2 : //interrupt enable & status register
-      data = (bigEndianGuest ? bswap_32(data) : data) & DVI_IESR_INTENABLE_MASK; //mask out status bit, writes on it have no effect
-      if( data != (BUS0_AB0_data.IESR.value & DVI_IESR_INTENABLE_MASK) ) {
-        enableVsyncInterrupt(data);
-        BUS0_AB0_data.IESR.value = data;
-      }
+      bhmMessage("W", "TFT_PSE", "Write to IESR at 0x%08x data 0x%08x", (Uns32)addr, data);
+      BUS0_AB0_data.IESR.value = (bigEndianGuest ? bswap_32(data) : data) & ~DVI_IESR_STATUS_MASK; //mask out status bit, writes on it have no effect
+      enableVsyncInterrupt(BUS0_AB0_data.IESR.value & DVI_IESR_INTENABLE_MASK);
       break;
     case 3 : //chrontel chip register
-      bhmMessage("W", "TFT_PSE", "Unhandled write to CCR: addr 0x%08x data 0x%08x", (Uns32)addr, data);
+      bhmMessage("W", "TFT_PSE", "Unhandled write to CCR at 0x%08x data 0x%08x", (Uns32)addr, data);
       BUS0_AB0_data.CCR.value = bigEndianGuest ? bswap_32(data) : data;
       break;
     default:
@@ -144,18 +142,20 @@ PPM_CONSTRUCTOR_CB(constructor) {
   else
     bhmMessage("F", "TFT_PSE", "Failed to initialize display");
 
+  //initialize registers to reset values
   BUS0_AB0_data.AR.value = DVI_VMEM_ADDRESS;
-  if( bigEndianGuest )
-    mapExternalVmem(bswap_32(BUS0_AB0_data.AR.value));
-  else
-    mapExternalVmem(BUS0_AB0_data.AR.value);
+  BUS0_AB0_data.CR.value = DVI_CR_EN_MASK;
+  BUS0_AB0_data.IESR.value = 0;
+  BUS0_AB0_data.CCR.value = 0;
+
+  mapExternalVmem(BUS0_AB0_data.AR.value);
   
   if( redrawMode == DVI_REDRAW_PSE ) {
     bhmMessage("I", "TFT_PSE", "Using polled, synchronized PSE drawing");
     while( 1 ) {
-      BUS0_AB0_data.IESR.value |= 1 << DVI_IESR_STATUS_OFFSET; //set IESR vsync status flag
+      BUS0_AB0_data.IESR.value |= DVI_IESR_STATUS_MASK; //set IESR vsync status flag
       redrawCallback();
-      BUS0_AB0_data.IESR.value &= ~(1 << DVI_IESR_STATUS_OFFSET); //clear IESR vsync status flag
+      BUS0_AB0_data.IESR.value &= ~DVI_IESR_STATUS_MASK; //clear IESR vsync status flag
       bhmWaitDelay(1000000/DVI_TARGET_FPS);
     }
   }

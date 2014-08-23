@@ -55,7 +55,6 @@ void dloFinish(dloObject* object) {
 }
 
 void dloUpdate(dloObject* object) {
-  vmiMessage("I", "TFT_SH", "DLO redrawing");
   dloConvertPixels(object);
   dlo_bmpflags_t bmpFlags = {0};
   dlo_retcode_t err = dlo_copy_host_bmp(object->dev, bmpFlags, &object->fbuf, &object->mode->view, 0);
@@ -73,7 +72,7 @@ void dloConvertPixels(dloObject* object) {
       uint32_t* srcPixel = object->framebuffer+DVI_VMEM_WIDTH*y+x;
       uint32_t* dstPixel;
       if( object->scanDirection == DVI_SCAN_BOTTOM_TOP )
-        dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*(DVI_OUTPUT_HEIGHT-1-y)-x;
+        dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*(DVI_OUTPUT_HEIGHT-y)-x-1;
       else
         dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*y+x;
       *dstPixel = *srcPixel >> 6;

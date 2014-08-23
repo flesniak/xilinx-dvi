@@ -136,13 +136,6 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
 
   vmiMessage("I", "TFT_SH", "prms: outputModule 0x%08x redrawMode 0x%08x bigEndianGuest 0x%08x", (Uns32)object->outputModule, (Uns32)object->redrawMode, (Uns32)object->bigEndianGuest);
 
-  //byte swapping does not seem to necessary between pse and semihost
-  /*if( object->bigEndianGuest ) {
-    vmiMessage("I", "TFT_SH", "working with big-endian guest");
-    object->outputModule = bswap_32(object->outputModule);
-    object->redrawMode = bswap_32(object->redrawMode);
-  }*/
-
   switch( object->outputModule ) {
     case sdl :
       object->sdl = calloc(1, sizeof(sdlObject));
@@ -173,11 +166,7 @@ static VMIOS_INTERCEPT_FN(configureDisplay) {
   Uns32 index = 0;
   GET_ARG(processor, object, index, object->enableDisplay);
   GET_ARG(processor, object, index, object->scanDirection);
-  vmiMessage("I", "TFT_SH", "configureDisplay enable 0x%08x scanDirection 0x%08x, did not convert yet", object->enableDisplay, object->scanDirection);
-  if( object->bigEndianGuest ) {
-    object->enableDisplay = bswap_32(object->enableDisplay);
-    object->scanDirection = bswap_32(object->scanDirection);
-  }
+  vmiMessage("I", "TFT_SH", "configureDisplay enable 0x%08x scanDirection 0x%08x", object->enableDisplay, object->scanDirection);
   switch( object->outputModule ) {
     case sdl :
       sdlConfigure(object->sdl, object->scanDirection);
@@ -191,8 +180,6 @@ static VMIOS_INTERCEPT_FN(configureDisplay) {
 static VMIOS_INTERCEPT_FN(mapExternalVmem) {
   Uns32 newVmemAddress = 0, index = 0;
   GET_ARG(processor, object, index, newVmemAddress);
-  if( object->bigEndianGuest )
-    newVmemAddress = bswap_32(newVmemAddress);
   mapExternalVmemLocal(processor, object, newVmemAddress);
 }
 
@@ -227,8 +214,7 @@ static VMIOS_CONSTRUCTOR_FN(constructor) {
   object->stackPointer = vmirtGetRegByName(processor, "esp");
   //TODO get endianess directly from the simulated processor instead of a formal? is this possible?
 
-  //redrawThreadState (0 = not running, 1 = running, 2 = stop when possible)
-  object->redrawThreadState = 0;
+  object->redrawThreadState = 0; //(0 = not running, 1 = running, 2 = stop when possible)
   object->enableVsyncInterrupt = 0;
   object->vsyncState = 0;
 }
@@ -248,6 +234,7 @@ static VMIOS_CONSTRUCTOR_FN(destructor) {
       break;
   }
   free(object->framebuffer);
+  vmiMessage("I", "TFT_SH", "Shutdown complete");
 }
 
 vmiosAttr modelAttrs = {
