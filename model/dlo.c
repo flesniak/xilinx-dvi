@@ -26,7 +26,7 @@ void dloInit(dloObject* object, unsigned char* framebuffer) {
   }
 
   //fill the screen black using native libdlo methods
-  err = dlo_fill_rect(object->dev, 0, 0, DLO_RGB(0xff, 0, 0));
+  err = dlo_fill_rect(object->dev, 0, 0, DLO_RGB(0, 0, 0));
   if( err != dlo_ok )
     vmiMessage("F", "TFT_SH", "Failed to fill rect: %s\n", dlo_strerror(err));
 
