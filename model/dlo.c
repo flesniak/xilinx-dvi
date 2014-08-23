@@ -34,7 +34,7 @@ void dloInit(dloObject* object, unsigned char* framebuffer) {
   object->fbuf.height = DVI_OUTPUT_HEIGHT;
   object->fbuf.fmt = dlo_pixfmt_abgr8888;
   object->fbuf.base = malloc(DVI_OUTPUT_WIDTH*DVI_OUTPUT_HEIGHT*DVI_VMEM_BYTES_PER_PIXEL);
-  object->fbuf.stride = DVI_VMEM_WIDTH;
+  object->fbuf.stride = DVI_OUTPUT_WIDTH;
 
   object->framebuffer = (uint32_t*)framebuffer;
   object->scanDirection = DVI_SCAN_TOP_BOTTOM;
@@ -77,7 +77,5 @@ void dloConvertPixels(dloObject* object) {
       else
         dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*y+x;
       *dstPixel = *srcPixel >> 6;
-      //if( !(x+y) )
-      //  vmiMessage("I", "TFT_SH", "x %d y %d src 0x%08x dst 0x%08x src 0x%08x dst 0x%08x", x, y, (uint32_t)srcPixel, (uint32_t)dstPixel, *srcPixel, *dstPixel);
     }
 }
