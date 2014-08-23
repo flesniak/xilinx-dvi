@@ -25,6 +25,7 @@ typedef struct vmiosObjectS {
   vmiRegInfoCP resultLow;
   vmiRegInfoCP resultHigh;
   vmiRegInfoCP stackPointer;
+  //vmiProcessorP processor;
 
   //memory information for mapping
   memDomainP realDomain;
@@ -43,6 +44,8 @@ typedef struct vmiosObjectS {
   int vsyncState;
   int enableDisplay;
   int scanDirection;
+  //ppmNetHandle vsyncInterrupt;
+  vmipseNetHandle vsyncInterrupt;
   
   //output module structs
   dloObject* dlo;
@@ -81,11 +84,15 @@ static void* drawDisplayThread(void* objectV) {
   object->redrawThreadState = 1; //thread is running
   while( object->redrawThreadState == 1 ) {
     if( object->enableDisplay ) {
+      if( object->enableVsyncInterrupt )
+        vmipseWriteNet(object->vsyncInterrupt, 0);
+        //vmirtWriteNetPort(object->processor, object->vsyncInterrupt, 0);
       object->vsyncState = 1;
       drawDisplay(object);
       object->vsyncState = 0;
-      if( object->enableVsyncInterrupt );
-        //TODO write interrupt net VSYNCINT
+      if( object->enableVsyncInterrupt )
+        vmipseWriteNet(object->vsyncInterrupt, 1);
+        //vmirtWriteNetPort(object->processor, object->vsyncInterrupt, 1);
     }
     usleep(1000000/DVI_TARGET_FPS);
   }
@@ -131,6 +138,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   object->vsyncState = 0;
   object->enableDisplay = DVI_DISPLAY_ENABLED;
   object->scanDirection = DVI_SCAN_TOP_BOTTOM;
+  GET_ARG(processor, object, index, object->vsyncInterrupt);
   object->dlo = 0;
   object->sdl = 0;
 
@@ -154,6 +162,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   if( !vmirtMapNativeMemory(object->realDomain, 0, DVI_VMEM_SIZE-1, object->framebuffer) )
   	vmiMessage("F", "TFT_SH", "Failed to map native vmem to semihost memory domain");
 
+  //object->processor = processor; //store processor to set the vsync interrupt net on
   if( object->redrawMode == DVI_REDRAW_PTHREAD ) {
     vmiMessage("I", "TFT_SH", "Launching redraw pthread");
     pthread_create(&object->redrawThread, 0, drawDisplayThread, (void*)object);

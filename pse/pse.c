@@ -19,7 +19,7 @@ typedef _Bool bool;
 static bool bigEndianGuest;
 static unsigned int redrawMode;
 
-Uns32 initDisplay(Uns32 output, Uns32 redrawMode, Uns32 bigEndianGuest) {
+Uns32 initDisplay(Uns32 output, Uns32 redrawMode, Uns32 bigEndianGuest, ppmNetHandle vsyncInterrupt) {
   bhmMessage("F", "TFT_PSE", "Failed to intercept : initDisplay()");
   return 0;
 }
@@ -135,7 +135,7 @@ PPM_CONSTRUCTOR_CB(constructor) {
   }
 
   bhmMessage("I", "TFT_PSE", "Initializing display initDisplay()");
-  Uns32 success = initDisplay(outputNum, redrawMode, bigEndianGuest);
+  Uns32 success = initDisplay(outputNum, redrawMode, bigEndianGuest, handles.VSYNCINT);
 
   if( success )
     bhmMessage("I", "TFT_PSE", "Display initialized successfully");
