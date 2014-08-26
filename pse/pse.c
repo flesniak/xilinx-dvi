@@ -123,7 +123,11 @@ PPM_CONSTRUCTOR_CB(constructor) {
     outputNum = DVI_OUTPUT_SDL;
   else {
     if( !strcmp(output, DVI_OUTPUT_STR_DLO) )
+      #ifndef NO_DLO
       outputNum = DVI_OUTPUT_DLO;
+      #else
+      bhmMessage("F", "TFT_PSE", "DLO output was disabled at compile time");
+      #endif
     else
       bhmMessage("F", "TFT_PSE", "Invalid output requested: %s", output);
   }

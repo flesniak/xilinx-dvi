@@ -4,6 +4,7 @@
 #include <vmi/vmiMessage.h>
 #include <byteswap.h>
 
+#ifndef NO_DLO
 void dloInit(dloObject* object, unsigned char* framebuffer) {
   vmiMessage("I", "TFT_SH", "Initializing DLO output module");
 
@@ -78,3 +79,10 @@ void dloConvertPixels(dloObject* object) {
       *dstPixel = *srcPixel >> 6;
     }
 }
+#else
+void dloInit(dloObject* object, unsigned char* framebuffer) {}
+void dloFinish(dloObject* object) {}
+void dloUpdate(dloObject* object) {}
+void dloConfigure(dloObject* object, int scanDirection) {}
+void dloConvertPixels(dloObject* object) {}
+#endif

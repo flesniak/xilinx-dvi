@@ -1,6 +1,7 @@
 #ifndef DLO_H
 #define DLO_H
 
+#ifndef NO_DLO
 #include <libdlo.h>
 
 typedef struct dloObjectS {
@@ -10,6 +11,9 @@ typedef struct dloObjectS {
   uint32_t* framebuffer;
   int scanDirection;
 } dloObject;
+#else
+typedef dloObject void;
+#endif
 
 void dloInit(dloObject* object, unsigned char* framebuffer);
 void dloFinish(dloObject* object);

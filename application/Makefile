@@ -14,7 +14,7 @@ endif
 
 IMPERAS_CC += -std=gnu99
 
-ASRC = application.c test-regs.c test-remap.c simple-colorchange.c test-iesr.c test-configure.c
+ASRC = rainbow.c test-regs.c test-remap.c simple-colorchange.c test-iesr.c test-configure.c
 ASRCINC?=microblaze_io.c
 
 AINCOBJ=$(patsubst %.c,%.$(CROSS).o,$(ASRCINC))
