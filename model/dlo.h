@@ -3,6 +3,8 @@
 
 #include "../dvi-mem.h"
 
+#include <stdint.h>
+
 #ifndef NO_DLO
 #include <libdlo.h>
 
