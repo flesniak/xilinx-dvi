@@ -1,6 +1,8 @@
 #ifndef DLO_H
 #define DLO_H
 
+#include "../dvi-mem.h"
+
 #ifndef NO_DLO
 #include <libdlo.h>
 
@@ -12,7 +14,7 @@ typedef struct dloObjectS {
   int scanDirection;
 } dloObject;
 #else
-typedef dloObject void;
+typedef void dloObject;
 #endif
 
 void dloInit(dloObject* object, unsigned char* framebuffer);
