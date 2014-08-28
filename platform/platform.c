@@ -142,8 +142,9 @@ int main( int argc, char** argv ) {
       ""                  // semi-hosting attributes
   );
 
+  icmProcessorP processor2 = 0;
   if( options.program2 )
-    icmProcessorP processor2 = icmNewProcessor(
+    processor2 = icmNewProcessor(
         "cpu2",             // CPU name
         "microblaze",       // CPU type
         0,                  // CPU cpuId
