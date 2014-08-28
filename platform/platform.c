@@ -19,10 +19,11 @@ static struct optionsS {
   char* display;
   double wallclockFactor;
   char* program;
-} options = { 1, ICM_ATTR_DEFAULT, UINT_MAX, INSTRUCTION_COUNT_DEFAULT, 0, 0, 0 };
+  char* program2;
+} options = { 1, ICM_ATTR_DEFAULT, UINT_MAX, INSTRUCTION_COUNT_DEFAULT, 0, 0, 0, 0 };
 
 void usage( char* argv0 ) {
-  fprintf( stderr, "Usage: %s [-v] [-t simple|count|regs] [-m memsize|-d] [-i instructions] <program.elf>\n", argv0 );
+  fprintf( stderr, "Usage: %s [-v] [-t simple|count|regs] [-m memsize|-d] [-i instructions] <program.elf> [program2.elf]\n", argv0 );
   fprintf( stderr, "  -v                   | increase verbosity (1 -> OVP stats, 2 -> stack analysis debug\n" );
   fprintf( stderr, "  -t simple|count|regs | enable instruction tracing, with instruction cound or register dump\n" );
   fprintf( stderr, "  -m memsize           | attach a memory of size memsize instead of the implicite one\n" );
@@ -101,12 +102,16 @@ void parseOptions( int argc, char** argv ) {
         usage( argv[0] );
     }
 
-  if( optind+1 != argc ) {
+  if( optind+2 < argc ) {
     fprintf( stderr, "Invalid number of arguments\n" );
     usage( argv[0] );
   }
 
   options.program = argv[optind];
+  if( optind+1 < argc ) {
+    printf("Using second processor\n");
+    options.program2 = argv[optind+1];
+  } //otherwise program2 == 0
 }
 
 int main( int argc, char** argv ) {
@@ -127,6 +132,19 @@ int main( int argc, char** argv ) {
 
   icmProcessorP processor1 = icmNewProcessor(
       "cpu1",             // CPU name
+      "microblaze",       // CPU type
+      0,                  // CPU cpuId
+      0,                  // CPU model flags
+      32,                 // address bits
+      model,              // model file
+      "",                 // morpher attributes
+      options.processorAttributes, // enable tracing or register values
+      userAttrs,          // user-defined attributes
+      semihosting,        // semi-hosting file
+      ""                  // semi-hosting attributes
+  );
+  icmProcessorP processor2 = icmNewProcessor(
+      "cpu2",             // CPU name
       "microblaze",       // CPU type
       0,                  // CPU cpuId
       0,                  // CPU model flags
@@ -167,6 +185,15 @@ int main( int argc, char** argv ) {
     icmMemoryP mem2 = icmNewMemory( "mem2", ICM_PRIV_RWX, UINT_MAX - (DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE) - 1 );
     icmConnectMemoryToBus( bus1, "port2", mem2, DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE );
 
+    //SECONDARY PROCESSOR
+    icmBusP bus2 = icmNewBus( "bus2", 32 );
+    icmConnectProcessorBusses( processor2, bus2, bus2 );
+
+    //secondary processor will have no configuration registers, just a dynamic bus mapping to VMEMBUS2
+    icmMemoryP mem3 = icmNewMemory( "mem3", ICM_PRIV_RWX, UINT_MAX );
+    icmConnectMemoryToBus( bus2, "port2", mem3, 0 );
+    icmConnectPSEBusDynamic( dvi, bus2, DVI_VMEM_2ND_BUS_NAME, 0 );
+
     //load semihost library
     icmAddPseInterceptObject( dvi, "dvi", "/home/lesniak/ovp/xilinx-dvi/model/model.so", 0, 0);
 
@@ -181,6 +208,8 @@ int main( int argc, char** argv ) {
     icmSetWallClockFactor(options.wallclockFactor);
 
   icmLoadProcessorMemory(processor1, options.program, ICM_LOAD_DEFAULT, False, True);
+  if( options.program2 )
+    icmLoadProcessorMemory(processor2, options.program2, ICM_LOAD_DEFAULT, False, True);
 
   //do by-instruction simulation if necessary
   if( options.instructionCount != INSTRUCTION_COUNT_DEFAULT ) {

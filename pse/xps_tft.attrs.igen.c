@@ -4,7 +4,7 @@
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
 //                             Version 20131018.0
-//                          Thu Aug 21 18:02:43 2014
+//                          Thu Aug 28 12:02:13 2014
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -34,6 +34,14 @@ static ppmBusPort busPorts[] = {
         .mustBeConnected = 1,
         .remappable      = 1,
         .description     = "Video memory, sized 2MB",
+    },
+    {
+        .name            = "VMEMBUS2",
+        .type            = PPM_SLAVE_PORT,
+        .addrHi          = 0x3fffffLL,
+        .mustBeConnected = 0,
+        .remappable      = 1,
+        .description     = "Second video memory, sized 2MB",
     },
     { 0 }
 };

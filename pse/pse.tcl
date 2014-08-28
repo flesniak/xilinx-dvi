@@ -33,6 +33,8 @@ iadddocumentation   -name Description -text "Xilinx XPS TFT Controller"
 
   imodeladdbusslaveport -name VMEMBUS -size 0x400000 -remappable -mustbeconnected
     iadddocumentation -name Description -text "Video memory, sized 2MB"
+  imodeladdbusslaveport -name VMEMBUS2 -size 0x400000 -remappable
+    iadddocumentation -name Description -text "Second video memory, sized 2MB"
   #imodeladdaddressblock -name VMEMAB  -size 0x400000 -port VMEMBUS -width 32 -offset 0
   #  imodeladdlocalmemory  -name VMEM    -size 0x400000 -addressblock VMEMBUS/VMEMAB
 

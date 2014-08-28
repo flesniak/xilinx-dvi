@@ -6,6 +6,7 @@
 typedef struct sdlObjectS {
   SDL_Surface* surface;
   SDL_Surface* tftSurface;
+  SDL_Surface* tftSurface2;
   int scanDirection;
 } sdlObject;
 

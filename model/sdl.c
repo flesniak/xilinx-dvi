@@ -8,7 +8,7 @@ void sdlInit(sdlObject* object, unsigned char* framebuffer) {
   if( SDL_Init(SDL_INIT_VIDEO) )
     vmiMessage("F", "TFT_SH", "Couldn't initialize SDL: %s\n", SDL_GetError());
 
-  object->surface = SDL_SetVideoMode(DVI_OUTPUT_WIDTH, DVI_OUTPUT_HEIGHT, 0, SDL_SWSURFACE);
+  object->surface = SDL_SetVideoMode(DVI_OUTPUT_WIDTH, 2*DVI_OUTPUT_HEIGHT, 0, SDL_SWSURFACE);
   if( !object->surface )
     vmiMessage("F", "TFT_SH", "Couldn't initialize surface: %s\n", SDL_GetError());
   SDL_FillRect(object->surface, 0, SDL_MapRGB(object->surface->format, 0, 0, 0));
@@ -21,12 +21,19 @@ void sdlInit(sdlObject* object, unsigned char* framebuffer) {
   SDL_FillRect(object->tftSurface, 0, SDL_MapRGB(object->tftSurface->format, 0, 0, 0));
   SDL_UpdateRect(object->tftSurface, 0, 0, 0, 0);
 
+  object->tftSurface2 = SDL_CreateRGBSurfaceFrom(framebuffer+DVI_VMEM_SIZE, DVI_VMEM_WIDTH, DVI_VMEM_HEIGHT, DVI_VMEM_BITS_PER_PIXEL, DVI_VMEM_SCANLINE_BYTES, DVI_VMEM_RMASK, DVI_VMEM_GMASK, DVI_VMEM_BMASK, 0);
+  if( !object->tftSurface2 )
+    vmiMessage("F", "TFT_SH", "Couldn't initialize tft surface: %s\n", SDL_GetError());
+  SDL_FillRect(object->tftSurface2, 0, SDL_MapRGB(object->tftSurface2->format, 0, 0, 0));
+  SDL_UpdateRect(object->tftSurface2, 0, 0, 0, 0);
+
   object->scanDirection = DVI_SCAN_TOP_BOTTOM;
 }
 
 void sdlFinish(sdlObject* object) {
   vmiMessage("I", "TFT_SH", "Finishing SDL output module");
   SDL_FreeSurface(object->tftSurface);
+  SDL_FreeSurface(object->tftSurface2);
   SDL_FreeSurface(object->surface);
   SDL_Quit();
 }
@@ -34,6 +41,9 @@ void sdlFinish(sdlObject* object) {
 void sdlUpdate(sdlObject* object) {
   if( SDL_BlitSurface(object->tftSurface, 0, object->surface, 0) )
     vmiMessage("W", "TFT_SH", "SDL Surface blit failed");
+  SDL_Rect dst2 = { .x = 0, .y = 480, .w = 640, .h = 480 };
+  if( SDL_BlitSurface(object->tftSurface2, 0, object->surface, &dst2) )
+    vmiMessage("W", "TFT_SH", "Second SDL Surface blit failed");
   SDL_UpdateRect(object->surface, 0, 0, 0, 0);
 }
 

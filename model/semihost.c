@@ -29,6 +29,7 @@ typedef struct vmiosObjectS {
 
   //memory information for mapping
   memDomainP realDomain;
+  memDomainP realDomain2;
   Uns32 vmemBaseAddr;
   unsigned char* framebuffer;
 
@@ -121,6 +122,7 @@ void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 ne
     //Perhaps try to get originally mapped domain, save it and map it back later on here?
   }
   vmipseAliasMemory(object->realDomain, DVI_VMEM_BUS_NAME, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1);
+  vmipseAliasMemory(object->realDomain2, DVI_VMEM_2ND_BUS_NAME, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1);
   object->vmemBaseAddr = newVmemAddress;
 }
 
@@ -128,7 +130,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   //initialize object struct
   Uns32 index = 0;
   object->vmemBaseAddr = 0;
-  object->framebuffer = calloc(1, DVI_VMEM_SIZE);
+  object->framebuffer = calloc(2, DVI_VMEM_SIZE);
   GET_ARG(processor, object, index, object->outputModule);
   GET_ARG(processor, object, index, object->redrawMode);
   object->redrawThread = 0;
@@ -158,8 +160,12 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   }
 
   object->realDomain = vmirtNewDomain("real", 32);
+  object->realDomain2 = vmirtNewDomain("real2", 32);
   getSimulatedVmemDomain(processor, DVI_VMEM_BUS_NAME); //just to check if VMEMBUS is connected
+  //VMEMBUS2 may not be connected, in this case the mapping in mapExternalVmemLocal() could fail?
   if( !vmirtMapNativeMemory(object->realDomain, 0, DVI_VMEM_SIZE-1, object->framebuffer) )
+  	vmiMessage("F", "TFT_SH", "Failed to map native vmem to semihost memory domain");
+  if( !vmirtMapNativeMemory(object->realDomain2, 0, DVI_VMEM_SIZE-1, object->framebuffer+DVI_VMEM_SIZE) )
   	vmiMessage("F", "TFT_SH", "Failed to map native vmem to semihost memory domain");
 
   //object->processor = processor; //store processor to set the vsync interrupt net on

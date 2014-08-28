@@ -11,6 +11,7 @@
 
 #define DVI_REGS_BUS_NAME               "BUS0"
 #define DVI_VMEM_BUS_NAME               "VMEMBUS"
+#define DVI_VMEM_2ND_BUS_NAME           "VMEMBUS2"
 
 //The following values define the layout of the framebuffer memory used by the xilinx xps tft controller
 #define DVI_VMEM_ADDRESS                (DVI_BASE_ADDRESS+DVI_CONTROL_REGS_SIZE)
