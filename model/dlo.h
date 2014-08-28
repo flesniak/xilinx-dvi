@@ -20,6 +20,6 @@ void dloFinish(dloObject* object);
 void dloUpdate(dloObject* object);
 void dloConfigure(dloObject* object, int scanDirection);
 
-void dloConvertPixels(dloObject* object);
+void dloConvertPixels(uint32_t* dst, uint32_t* src, int scanDirection, int pitch);
 
 #endif //SDL_H

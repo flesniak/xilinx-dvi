@@ -31,11 +31,11 @@ void dloInit(dloObject* object, unsigned char* framebuffer) {
   if( err != dlo_ok )
     vmiMessage("F", "TFT_SH", "Failed to fill rect: %s\n", dlo_strerror(err));
 
-  object->fbuf.width = DVI_OUTPUT_WIDTH;
+  object->fbuf.width = 2*DVI_OUTPUT_WIDTH;
   object->fbuf.height = DVI_OUTPUT_HEIGHT;
   object->fbuf.fmt = dlo_pixfmt_abgr8888;
-  object->fbuf.base = malloc(DVI_OUTPUT_WIDTH*DVI_OUTPUT_HEIGHT*DVI_VMEM_BYTES_PER_PIXEL);
-  object->fbuf.stride = DVI_OUTPUT_WIDTH;
+  object->fbuf.base = malloc(2*DVI_OUTPUT_WIDTH*DVI_OUTPUT_HEIGHT*DVI_VMEM_BYTES_PER_PIXEL);
+  object->fbuf.stride = 2*DVI_OUTPUT_WIDTH;
 
   object->framebuffer = (uint32_t*)framebuffer;
   object->scanDirection = DVI_SCAN_TOP_BOTTOM;
@@ -56,7 +56,8 @@ void dloFinish(dloObject* object) {
 }
 
 void dloUpdate(dloObject* object) {
-  dloConvertPixels(object);
+  dloConvertPixels(object->fbuf.base, object->framebuffer, object->scanDirection, object->fbuf.stride);
+  dloConvertPixels(((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH, object->framebuffer+DVI_VMEM_SIZE/4, object->scanDirection, object->fbuf.stride);
   dlo_bmpflags_t bmpFlags = {0};
   dlo_retcode_t err = dlo_copy_host_bmp(object->dev, bmpFlags, &object->fbuf, &object->mode->view, 0);
   if( err != dlo_ok )
@@ -67,15 +68,15 @@ void dloConfigure(dloObject* object, int scanDirection) {
   object->scanDirection = scanDirection;
 }
 
-void dloConvertPixels(dloObject* object) {
+void dloConvertPixels(uint32_t* dst, uint32_t* src, int scanDirection, int pitch) {
   for( unsigned int y = 0; y < DVI_OUTPUT_HEIGHT; y++ )
     for( unsigned int x = 0; x < DVI_OUTPUT_WIDTH; x++ ) {
-      uint32_t* srcPixel = object->framebuffer+DVI_VMEM_WIDTH*y+x;
+      uint32_t* srcPixel = src+DVI_VMEM_WIDTH*y+x;
       uint32_t* dstPixel;
-      if( object->scanDirection == DVI_SCAN_BOTTOM_TOP )
-        dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*(DVI_OUTPUT_HEIGHT-y)-x-1;
+      if( scanDirection == DVI_SCAN_BOTTOM_TOP )
+        dstPixel = dst+pitch*(DVI_OUTPUT_HEIGHT-y)-x-1;
       else
-        dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*y+x;
+        dstPixel = dst+pitch*y+x;
       *dstPixel = *srcPixel >> 6;
     }
 }

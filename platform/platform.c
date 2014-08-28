@@ -108,10 +108,8 @@ void parseOptions( int argc, char** argv ) {
   }
 
   options.program = argv[optind];
-  if( optind+1 < argc ) {
-    printf("Using second processor\n");
-    options.program2 = argv[optind+1];
-  } //otherwise program2 == 0
+  if( optind+1 < argc )
+    options.program2 = argv[optind+1]; //otherwise program2 == 0
 }
 
 int main( int argc, char** argv ) {
@@ -143,19 +141,21 @@ int main( int argc, char** argv ) {
       semihosting,        // semi-hosting file
       ""                  // semi-hosting attributes
   );
-  icmProcessorP processor2 = icmNewProcessor(
-      "cpu2",             // CPU name
-      "microblaze",       // CPU type
-      0,                  // CPU cpuId
-      0,                  // CPU model flags
-      32,                 // address bits
-      model,              // model file
-      "",                 // morpher attributes
-      options.processorAttributes, // enable tracing or register values
-      userAttrs,          // user-defined attributes
-      semihosting,        // semi-hosting file
-      ""                  // semi-hosting attributes
-  );
+
+  if( options.program2 )
+    icmProcessorP processor2 = icmNewProcessor(
+        "cpu2",             // CPU name
+        "microblaze",       // CPU type
+        0,                  // CPU cpuId
+        0,                  // CPU model flags
+        32,                 // address bits
+        model,              // model file
+        "",                 // morpher attributes
+        options.processorAttributes, // enable tracing or register values
+        userAttrs,          // user-defined attributes
+        semihosting,        // semi-hosting file
+        ""                  // semi-hosting attributes
+    );
 
   //dvi display emulation requested
   if( options.display ) {
@@ -185,14 +185,17 @@ int main( int argc, char** argv ) {
     icmMemoryP mem2 = icmNewMemory( "mem2", ICM_PRIV_RWX, UINT_MAX - (DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE) - 1 );
     icmConnectMemoryToBus( bus1, "port2", mem2, DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE );
 
-    //SECONDARY PROCESSOR
-    icmBusP bus2 = icmNewBus( "bus2", 32 );
-    icmConnectProcessorBusses( processor2, bus2, bus2 );
 
-    //secondary processor will have no configuration registers, just a dynamic bus mapping to VMEMBUS2
-    icmMemoryP mem3 = icmNewMemory( "mem3", ICM_PRIV_RWX, UINT_MAX );
-    icmConnectMemoryToBus( bus2, "port2", mem3, 0 );
-    icmConnectPSEBusDynamic( dvi, bus2, DVI_VMEM_2ND_BUS_NAME, 0 );
+    if( options.program2 ) {
+      //SECONDARY PROCESSOR
+      icmBusP bus2 = icmNewBus( "bus2", 32 );
+      icmConnectProcessorBusses( processor2, bus2, bus2 );
+
+      //secondary processor will have no configuration registers, just a dynamic bus mapping to VMEMBUS2
+      icmMemoryP mem3 = icmNewMemory( "mem3", ICM_PRIV_RWX, UINT_MAX );
+      icmConnectMemoryToBus( bus2, "port2", mem3, 0 );
+      icmConnectPSEBusDynamic( dvi, bus2, DVI_VMEM_2ND_BUS_NAME, 0 );
+    }
 
     //load semihost library
     icmAddPseInterceptObject( dvi, "dvi", "/home/lesniak/ovp/xilinx-dvi/model/model.so", 0, 0);

@@ -166,7 +166,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   if( !vmirtMapNativeMemory(object->realDomain, 0, DVI_VMEM_SIZE-1, object->framebuffer) )
   	vmiMessage("F", "TFT_SH", "Failed to map native vmem to semihost memory domain");
   if( !vmirtMapNativeMemory(object->realDomain2, 0, DVI_VMEM_SIZE-1, object->framebuffer+DVI_VMEM_SIZE) )
-  	vmiMessage("F", "TFT_SH", "Failed to map native vmem to semihost memory domain");
+  	vmiMessage("F", "TFT_SH", "Failed to map second native vmem to semihost memory domain");
 
   //object->processor = processor; //store processor to set the vsync interrupt net on
   if( object->redrawMode == DVI_REDRAW_PTHREAD ) {
