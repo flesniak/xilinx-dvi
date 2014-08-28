@@ -156,7 +156,7 @@ int main( int argc, char** argv ) {
     //icmAddUns32Attr(pseAttrs, "polledRedraw", DVI_REDRAW_PSE);
 
     //memory from DVI_BASE_ADDRESS to DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1; map dvi peripheral to memory hole
-    icmPseP dvi = icmNewPSE( "dvi", "/home/lesniak/ovp/xilinx-dvi/pse/pse.pse", pseAttrs, 0, 0 );
+    icmPseP dvi = icmNewPSE( "dvi", "../pse/pse.pse", pseAttrs, 0, 0 );
     icmConnectPSEBus( dvi, bus1, DVI_REGS_BUS_NAME, 0, DVI_BASE_ADDRESS, DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE - 1 );
     //icmConnectPSEBus( dvi, bus1, "VMEMBUS", 0, DVI_VMEM_ADDRESS, DVI_VMEM_ADDRESS + DVI_VMEM_SIZE - 1 );
     icmConnectPSEBusDynamic( dvi, bus1, DVI_VMEM_BUS_NAME, 0 );
@@ -168,7 +168,7 @@ int main( int argc, char** argv ) {
     icmConnectMemoryToBus( bus1, "port2", mem2, DVI_BASE_ADDRESS + DVI_CONTROL_REGS_SIZE );
 
     //load semihost library
-    icmAddPseInterceptObject( dvi, "dvi", "/home/lesniak/ovp/xilinx-dvi/model/model.so", 0, 0);
+    icmAddPseInterceptObject( dvi, "dvi", "../model/model.so", 0, 0);
 
   } else if( options.memorySize != UINT_MAX ) {
     icmBusP bus1 = icmNewBus( "bus1", 32 );
