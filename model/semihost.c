@@ -142,8 +142,6 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   object->dlo = 0;
   object->sdl = 0;
 
-  vmiMessage("I", "TFT_SH", "prms: outputModule 0x%08x redrawMode 0x%08x bigEndianGuest 0x%08x", (Uns32)object->outputModule, (Uns32)object->redrawMode, (Uns32)object->bigEndianGuest);
-
   switch( object->outputModule ) {
     case sdl :
       object->sdl = calloc(1, sizeof(sdlObject));

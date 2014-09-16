@@ -2,6 +2,7 @@
 #include "../dvi-mem.h"
 
 #include <vmi/vmiMessage.h>
+#include <vmi/vmiRt.h>
 
 void sdlInit(sdlObject* object, unsigned char* framebuffer) {
   vmiMessage("I", "TFT_SH", "Initializing SDL output module");
@@ -13,6 +14,7 @@ void sdlInit(sdlObject* object, unsigned char* framebuffer) {
     vmiMessage("F", "TFT_SH", "Couldn't initialize surface: %s\n", SDL_GetError());
   SDL_FillRect(object->surface, 0, SDL_MapRGB(object->surface->format, 0, 0, 0));
   SDL_UpdateRect(object->surface, 0, 0, 0, 0);
+  SDL_WM_SetCaption("OVP SDL output", 0);
 
   //create a surface matching the pixel format of the xilinx tft controller using the supplied framebuffer as pixel storage
   object->tftSurface = SDL_CreateRGBSurfaceFrom(framebuffer, DVI_VMEM_WIDTH, DVI_VMEM_HEIGHT, DVI_VMEM_BITS_PER_PIXEL, DVI_VMEM_SCANLINE_BYTES, DVI_VMEM_RMASK, DVI_VMEM_GMASK, DVI_VMEM_BMASK, 0);
@@ -35,6 +37,14 @@ void sdlUpdate(sdlObject* object) {
   if( SDL_BlitSurface(object->tftSurface, 0, object->surface, 0) )
     vmiMessage("W", "TFT_SH", "SDL Surface blit failed");
   SDL_UpdateRect(object->surface, 0, 0, 0, 0);
+
+  //event loop to support clicking the "close" button
+  /*SDL_Event event;
+  while( SDL_PollEvent(&event) )
+    if( event.type == SDL_QUIT ) {
+      vmiMessage("I", "TFT_SH", "SDL Quit event, stopping simulation");
+      vmirtFinish(0);
+    }*/
 }
 
 void sdlConfigure(sdlObject* object, int scanDirection) {
