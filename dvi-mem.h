@@ -1,10 +1,6 @@
 #ifndef DVI_MEM
 #define DVI_MEM
 
-//BUILD PARAMETERS
-
-//#define NO_DLO
-
 //PERIPHERAL PARAMETERS - you should not need to change anything below this point!
 #define DVI_BASE_ADDRESS                0x80000000U
 #define DVI_CONTROL_REGS_SIZE           16U

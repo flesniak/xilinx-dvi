@@ -1,5 +1,8 @@
 #This makefile calls all other necessary makefiles
 
+#set this to 0 if you do not want the model to support DLO outputs
+export USE_DLO = 0
+
 all: modules
 clean: modules.clean
 
