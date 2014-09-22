@@ -10,7 +10,7 @@ COMPILATION
 ===========
 
 - be sure that your environment is properly set up to use Imperas OVP
-- Edit "dvi-mem.h" to fit your requirements, e.g. may want to disable DLO support.
+- Edit "Makefile" in the code root to fit your requirements, e.g. may want to disable DLO support.
 - "make"
 
 RUN
