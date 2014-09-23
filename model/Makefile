@@ -18,7 +18,9 @@ SRCOBJ = $(patsubst %.c,%.o,$(SRC))
 
 .PHONY : all clean
 
-all : $(SRCOBJ)
+all : $(LIB)
+
+$(LIB) : $(SRCOBJ)
 	gcc -o $(LIB) $^ $(LDFLAGS)
 
 $(SRCOBJ) : $(SRC)
