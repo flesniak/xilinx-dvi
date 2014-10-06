@@ -48,7 +48,7 @@ void usleep(unsigned int us) {
 
 void waitVsync() {
   unsigned int* volatile iesr = (unsigned int*)DVI_IESR_ADDR;
-  while( *iesr & DVI_IESR_STATUS_MASK );
+  while( ! (*iesr & DVI_IESR_STATUS_MASK) );
   printf("Vsync ready\n");
 }
 
@@ -71,10 +71,10 @@ int main() {
   unsigned int n = 0;
   while( 1 ) {
     unsigned int reg = *iesr;
-    if( reg & DVI_IESR_STATUS_MASK ) {
-      printf("vsync flag active after %d tries (0x%08x)\n", n, reg);
+    if( !(reg & DVI_IESR_STATUS_MASK) ) {
+      printf("vsync pulse inactive after %d tries (0x%08x)\n", n, reg);
       n = 0;
-      while( *iesr & DVI_IESR_STATUS_MASK );
+      while( !(*iesr & DVI_IESR_STATUS_MASK) );
     } else n++;
   }
 

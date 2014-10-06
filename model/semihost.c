@@ -28,7 +28,7 @@ typedef struct vmiosObjectS {
   //vmiProcessorP processor;
 
   //memory information for mapping
-  memDomainP realDomain;
+  memDomainP guestDomain;
   Uns32 vmemBaseAddr;
   unsigned char* framebuffer;
 
@@ -87,9 +87,9 @@ static void* drawDisplayThread(void* objectV) {
       if( object->enableVsyncInterrupt )
         vmipseWriteNet(object->vsyncInterrupt, 0);
         //vmirtWriteNetPort(object->processor, object->vsyncInterrupt, 0);
-      object->vsyncState = 1;
-      drawDisplay(object);
       object->vsyncState = 0;
+      drawDisplay(object);
+      object->vsyncState = 1;
       if( object->enableVsyncInterrupt )
         vmipseWriteNet(object->vsyncInterrupt, 1);
         //vmirtWriteNetPort(object->processor, object->vsyncInterrupt, 1);
@@ -110,17 +110,16 @@ memDomainP getSimulatedVmemDomain(vmiProcessorP processor, char* name) {
 }
 
 void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 newVmemAddress) {
+  object->vsyncState = 0; //reset vsync flag to indicate new address is not yet displayed
   vmiMessage("I", "TFT_SH", "Mapping external vmem (new addr 0x%08x, old addr 0x%08x)", newVmemAddress, object->vmemBaseAddr);
-  memDomainP simDomain = getSimulatedVmemDomain(processor, DVI_VMEM_BUS_NAME);
-  if( !simDomain )
-    vmiMessage("F", "TFT_SH", "simDomain not found");
   if( object->vmemBaseAddr ) {
     vmiMessage("I", "TFT_SH", "Unaliasing previously mapped memory at 0x%08x", object->vmemBaseAddr);
-    vmirtUnaliasMemory(simDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1);
-    vmirtMapMemory(simDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, MEM_RAM);
+    vmirtUnaliasMemory(object->guestDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1);
+    vmirtMapMemory(object->guestDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, MEM_RAM);
+    vmirtWriteNByteDomain(object->guestDomain, object->vmemBaseAddr, object->framebuffer, DVI_VMEM_SIZE, 0, MEM_AA_FALSE);
+    vmirtReadNByteDomain(object->guestDomain, newVmemAddress, object->framebuffer, DVI_VMEM_SIZE, 0, MEM_AA_FALSE);
   }
-  //vmipseAliasMemory(object->realDomain, DVI_VMEM_BUS_NAME, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1);
-  vmirtMapNativeMemory(simDomain, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE, object->framebuffer);
+  vmirtMapNativeMemory(object->guestDomain, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1, object->framebuffer);
   object->vmemBaseAddr = newVmemAddress;
 }
 
@@ -155,10 +154,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
       vmiMessage("F", "TFT_SH", "Unknown output module %d selected", (Uns32)object->outputModule);
   }
 
-  object->realDomain = vmirtNewDomain("real", 32);
-  getSimulatedVmemDomain(processor, DVI_VMEM_BUS_NAME); //just to check if VMEMBUS is connected
-  if( !vmirtMapNativeMemory(object->realDomain, 0, DVI_VMEM_SIZE-1, object->framebuffer) )
-  	vmiMessage("F", "TFT_SH", "Failed to map native vmem to semihost memory domain");
+  object->guestDomain = getSimulatedVmemDomain(processor, DVI_VMEM_BUS_NAME); //check if VMEMBUS is connected
 
   //object->processor = processor; //store processor to set the vsync interrupt net on
   if( object->redrawMode == DVI_REDRAW_PTHREAD ) {

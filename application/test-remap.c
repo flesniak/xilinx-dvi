@@ -58,13 +58,13 @@ int main() {
   fillScreen(firstVmem, 0xff, 0, 0);
   usleep(WAIT_PER_TEST*1000000);
 
+  printf("Filling the screen green at new vmem address.\n");
+  fillScreen(secondVmem, 0, 0xff, 0);
+  usleep(WAIT_PER_TEST*1000000);
+
   printf("Writing to AR (this should remap the bus to 0x%08x)\n", REMAP_TO);
   *ar = REMAP_TO;
   printf("Reading from AR: 0x%08x\n", *ar);
-  usleep(WAIT_PER_TEST*1000000);
-
-  printf("Filling the screen green at new vmem address.\n");
-  fillScreen(secondVmem, 0, 0xff, 0);
   usleep(WAIT_PER_TEST*1000000);
 
   printf("Filling the screen blue at old vmem address. NOTHING SHOULD HAPPEN!\n");
