@@ -2,14 +2,14 @@
 #define DVI_MEM
 
 //PERIPHERAL PARAMETERS - you should not need to change anything below this point!
-#define DVI_BASE_ADDRESS                0x80000000U
-#define DVI_CONTROL_REGS_SIZE           16U
+#define DVI_BASE_ADDRESS                0x80000000U //C_SPLB_BASEADDR
+#define DVI_CONTROL_REGS_SIZE           16U         //C_SPLB_HIGHADDR-C_SPLB_BASEADDR+1
 
 #define DVI_REGS_BUS_NAME               "BUS0"
 #define DVI_VMEM_BUS_NAME               "VMEMBUS"
 
 //The following values define the layout of the framebuffer memory used by the xilinx xps tft controller
-#define DVI_VMEM_ADDRESS                (DVI_BASE_ADDRESS+DVI_CONTROL_REGS_SIZE)
+#define DVI_VMEM_ADDRESS                0xF0000000 //C_DEFAULT_TFT_BASE_ADDR 
 #define DVI_VMEM_SIZE                   0x400000U //1024x576 pixels 32bpp 0xggbbrraa (notation in little endian)
 #define DVI_VMEM_WIDTH                  1024
 #define DVI_VMEM_HEIGHT                 512
