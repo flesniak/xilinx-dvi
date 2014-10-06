@@ -111,16 +111,16 @@ memDomainP getSimulatedVmemDomain(vmiProcessorP processor, char* name) {
 
 void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 newVmemAddress) {
   vmiMessage("I", "TFT_SH", "Mapping external vmem (new addr 0x%08x, old addr 0x%08x)", newVmemAddress, object->vmemBaseAddr);
+  memDomainP simDomain = getSimulatedVmemDomain(processor, DVI_VMEM_BUS_NAME);
+  if( !simDomain )
+    vmiMessage("F", "TFT_SH", "simDomain not found");
   if( object->vmemBaseAddr ) {
     vmiMessage("I", "TFT_SH", "Unaliasing previously mapped memory at 0x%08x", object->vmemBaseAddr);
-    memDomainP simDomain = getSimulatedVmemDomain(processor, DVI_VMEM_BUS_NAME);
     vmirtUnaliasMemory(simDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1);
-    //vmirtMapMemory(simDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, MEM_RAM);
-    //NOTE this unalias command does not work as expected. OVPsim seems to not yet have a way to dynamically unmap vmipse-mapped memory
-    //The memory will be unmapped completely and not re-mapped to the ordinary platform-initialized RAM
-    //Perhaps try to get originally mapped domain, save it and map it back later on here?
+    vmirtMapMemory(simDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, MEM_RAM);
   }
-  vmipseAliasMemory(object->realDomain, DVI_VMEM_BUS_NAME, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1);
+  //vmipseAliasMemory(object->realDomain, DVI_VMEM_BUS_NAME, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1);
+  vmirtMapNativeMemory(simDomain, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE, object->framebuffer);
   object->vmemBaseAddr = newVmemAddress;
 }
 
