@@ -1,6 +1,8 @@
 #ifndef DVI_MEM
 #define DVI_MEM
 
+#define DLO_SET_VGA_MODE                1 //set to 0 if you want the dlo output to operate at native display resolution (not set 640x480 mode)
+
 //PERIPHERAL PARAMETERS - you should not need to change anything below this point!
 #define DVI_BASE_ADDRESS                0x80000000U //C_SPLB_BASEADDR
 #define DVI_CONTROL_REGS_SIZE           16U         //C_SPLB_HIGHADDR-C_SPLB_BASEADDR+1

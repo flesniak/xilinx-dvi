@@ -4,7 +4,6 @@
 #include <vmi/vmiMessage.h>
 #include <byteswap.h>
 
-#ifndef NO_DLO
 void dloInit(dloObject* object, unsigned char* framebuffer) {
   vmiMessage("I", "TFT_SH", "Initializing DLO output module");
 
@@ -19,7 +18,7 @@ void dloInit(dloObject* object, unsigned char* framebuffer) {
     vmiMessage("F", "TFT_SH", "Failed to claim DisplayLink device\n");
 
   object->mode = dlo_get_mode(object->dev);
-  if( 0 ) { //activate to set display to 640x480
+  if( DLO_SET_VGA_MODE ) { //activate to set display to 640x480
     dlo_mode_t mode = { .view = {.width = DVI_OUTPUT_WIDTH, .height = DVI_OUTPUT_HEIGHT, .bpp = object->mode->view.bpp, .base = 0}, .refresh = 0 };
     err = dlo_set_mode(object->dev, &mode);
     if( err != dlo_ok )
@@ -79,10 +78,3 @@ void dloConvertPixels(dloObject* object) {
       *dstPixel = *srcPixel >> 6;
     }
 }
-#else
-void dloInit(dloObject* object, unsigned char* framebuffer) {}
-void dloFinish(dloObject* object) {}
-void dloUpdate(dloObject* object) {}
-void dloConfigure(dloObject* object, int scanDirection) {}
-void dloConvertPixels(dloObject* object) {}
-#endif

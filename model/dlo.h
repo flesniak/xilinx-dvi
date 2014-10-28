@@ -3,10 +3,8 @@
 
 #include "../dvi-mem.h"
 
-#include <stdint.h>
-
-#ifndef NO_DLO
 #include <libdlo.h>
+#include <stdint.h>
 
 typedef struct dloObjectS {
   dlo_dev_t dev;
@@ -15,9 +13,6 @@ typedef struct dloObjectS {
   uint32_t* framebuffer;
   int scanDirection;
 } dloObject;
-#else
-typedef void dloObject;
-#endif
 
 void dloInit(dloObject* object, unsigned char* framebuffer);
 void dloFinish(dloObject* object);
