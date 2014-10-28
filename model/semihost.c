@@ -19,7 +19,7 @@
 #include "sdl.h"
 #ifdef USE_DLO
   #include "dlo.h"
-#endif //NO_DLO
+#endif //USE_DLO
 #include "../dvi-mem.h"
 
 typedef struct vmiosObjectS {
@@ -48,11 +48,11 @@ typedef struct vmiosObjectS {
   int scanDirection;
   //ppmNetHandle vsyncInterrupt;
   vmipseNetHandle vsyncInterrupt;
-  
+
   //output module structs
 #ifdef USE_DLO
   dloObject* dlo;
-#endif //NO_DLO
+#endif //USE_DLO
   sdlObject* sdl;
 } vmiosObject;
 
@@ -81,7 +81,7 @@ inline static void drawDisplay(vmiosObjectP object) {
     case dlo :
       dloUpdate(object->dlo);
       break;
-#endif //NO_DLO
+#endif //USE_DLO
     default : ;
   }
 }
@@ -148,7 +148,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   object->sdl = 0;
 #ifdef USE_DLO
   object->dlo = 0;
-#endif //NO_DLO
+#endif //USE_DLO
 
   switch( object->outputModule ) {
     case sdl :
@@ -160,7 +160,7 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
       object->dlo = calloc(1, sizeof(dloObject));
       dloInit(object->dlo, object->framebuffer);
       break;
-#endif //NO_DLO
+#endif //USE_DLO
     default :
       vmiMessage("F", "TFT_SH", "Unknown output module %d selected", (Uns32)object->outputModule);
   }
@@ -189,7 +189,7 @@ static VMIOS_INTERCEPT_FN(configureDisplay) {
     case dlo :
       dloConfigure(object->dlo, object->scanDirection);
       break;
-#endif //NO_DLO
+#endif //USE_DLO
     default :
       vmiMessage("F", "TFT_SH", "Unknown output module %d selected", (Uns32)object->outputModule);
   }
@@ -251,7 +251,7 @@ static VMIOS_CONSTRUCTOR_FN(destructor) {
       dloFinish(object->dlo);
       free(object->dlo);
       break;
-#endif //NO_DLO
+#endif //USE_DLO
     default :
       vmiMessage("F", "TFT_SH", "Unknown output module %d selected", (Uns32)object->outputModule);
   }

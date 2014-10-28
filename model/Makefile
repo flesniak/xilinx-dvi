@@ -11,7 +11,6 @@ LDFLAGS = $(SIM_LDFLAGS) $(IMPERAS_VMISTUBS) -shared -lSDL -pthread
 ifeq ($(USE_DLO),1)
 	LDFLAGS += -ldlo
 	SRC += dlo.c
-else
 	CFLAGS += -DUSE_DLO
 endif
 
