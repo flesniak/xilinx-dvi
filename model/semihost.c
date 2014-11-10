@@ -124,8 +124,8 @@ void mapExternalVmemLocal(vmiProcessorP processor, vmiosObjectP object, Uns32 ne
     vmirtUnaliasMemory(object->guestDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1);
     vmirtMapMemory(object->guestDomain, object->vmemBaseAddr, object->vmemBaseAddr+DVI_VMEM_SIZE-1, MEM_RAM);
     vmirtWriteNByteDomain(object->guestDomain, object->vmemBaseAddr, object->framebuffer, DVI_VMEM_SIZE, 0, MEM_AA_FALSE);
-    vmirtReadNByteDomain(object->guestDomain, newVmemAddress, object->framebuffer, DVI_VMEM_SIZE, 0, MEM_AA_FALSE);
   }
+  vmirtReadNByteDomain(object->guestDomain, newVmemAddress, object->framebuffer, DVI_VMEM_SIZE, 0, MEM_AA_FALSE);
   vmirtMapNativeMemory(object->guestDomain, newVmemAddress, newVmemAddress+DVI_VMEM_SIZE-1, object->framebuffer);
   object->vmemBaseAddr = newVmemAddress;
 }
