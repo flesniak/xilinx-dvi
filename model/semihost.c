@@ -54,6 +54,9 @@ typedef struct vmiosObjectS {
   dloObject* dlo;
 #endif //USE_DLO
   sdlObject* sdl;
+
+  //stats
+  unsigned int frames;
 } vmiosObject;
 
 static void getArg(vmiProcessorP processor, vmiosObjectP object, Uns32 *index, void* result, Uns32 argSize) {
@@ -84,6 +87,7 @@ inline static void drawDisplay(vmiosObjectP object) {
 #endif //USE_DLO
     default : ;
   }
+  object->frames++;
 }
 
 static void* drawDisplayThread(void* objectV) {
@@ -235,6 +239,7 @@ static VMIOS_CONSTRUCTOR_FN(constructor) {
   object->redrawThreadState = 0; //(0 = not running, 1 = running, 2 = stop when possible)
   object->enableVsyncInterrupt = 0;
   object->vsyncState = 0;
+  object->frames = 0;
 }
 
 static VMIOS_CONSTRUCTOR_FN(destructor) {
@@ -256,7 +261,7 @@ static VMIOS_CONSTRUCTOR_FN(destructor) {
       vmiMessage("F", "TFT_SH", "Unknown output module %d selected", (Uns32)object->outputModule);
   }
   free(object->framebuffer);
-  vmiMessage("I", "TFT_SH", "Shutdown complete");
+  vmiMessage("I", "TFT_SH", "Shutdown complete, %d frames drawn", object->frames);
 }
 
 vmiosAttr modelAttrs = {
