@@ -92,7 +92,8 @@ int main() {
       setPixel(vmem, x, y, 0, 0, 255);
   while( 1 );*/
 
-  while( 1 ) {
+  int frames = 0;
+  while( frames < 1000 ) {
     r2 = r1; g2 = g1; b2 = b1;
     rainbowState2 = rainbowState1;
     advanceRainbow(&rainbowState1, &r1, &g1, &b1);
@@ -105,13 +106,16 @@ int main() {
       r3 = r2; g3 = g2; b3 = b2;
       rainbowState3 = rainbowState2;
       for( unsigned short x = 0; x < 640; x+=1 ) {
-        setPixel(vmem, x, y, r3, g3, b3);
+        //setPixel(vmem, x, y, r3, g3, b3);
+        *((unsigned int*)(vmem + (DVI_VMEM_SCANLINE_BYTES*y + x*DVI_VMEM_BYTES_PER_PIXEL))) = (b3 >> 2 | g3 << 6 | r3 << 14) & 0x007F7F7F;
         advanceRainbow(&rainbowState3, &r3, &g3, &b3);
       }
     }
-    printf("TFT_APP one full frame painted\n");
+    //printf("TFT_APP one full frame painted\n");
     //usleep(10000);
+    frames++;
   }
+  printf("1000 frames drawn, exit\n");
 
   return 0;
 }
