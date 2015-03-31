@@ -24,11 +24,9 @@
 
 #define DELAY 1000000
 
-void setPixel(unsigned char* vmem, unsigned short x, unsigned short y, unsigned char r, unsigned char g, unsigned char b) {
-  unsigned char* pixel = vmem + (DVI_VMEM_SCANLINE_BYTES*y + x*DVI_VMEM_BYTES_PER_PIXEL);
-  pixel[1] = r>>2;
-  pixel[2] = g>>2;
-  pixel[3] = b>>2;
+inline void setPixel(unsigned char* vmem, unsigned short x, unsigned short y, unsigned char r, unsigned char g, unsigned char b) {
+  unsigned int* pixel = (unsigned int*)(vmem + (DVI_VMEM_SCANLINE_BYTES*y + x*DVI_VMEM_BYTES_PER_PIXEL));
+  *pixel = (r << 16) | (g << 8) | b;
 }
 
 //100 MIPS = 100 kIPms = 100 IPµs
@@ -45,9 +43,11 @@ int main() {
   printf("Startup.\n");
   while( 1 ) {
     printf("Filling the screen red.\n");
-    for( unsigned int y = 0; y < 480; y++ )
+    for( unsigned int y = 0; y < 480; y++ ) {
+      unsigned int* pixel = (unsigned int*)(vmem + (DVI_VMEM_SCANLINE_BYTES*y));
       for( unsigned int x = 0; x < 640; x++ )
-        setPixel(vmem, x, y, 255, 0, 0);
+        *pixel++ = 255 << 16;
+    }
     usleep(DELAY); //should be ~1 sec
 
     printf("Filling the screen green.\n");

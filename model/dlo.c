@@ -75,6 +75,6 @@ void dloConvertPixels(dloObject* object) {
         dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*(DVI_OUTPUT_HEIGHT-y)-x-1;
       else
         dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*y+x;
-      *dstPixel = *srcPixel >> 6;
+      *dstPixel = *srcPixel >> 8;
     }
 }

@@ -5,7 +5,7 @@ include $(IMPERAS_HOME)/bin/Makefile.include
 
 PLATFORM_SRC = platform.c
 PLATFORM_SRCINC = 
-PLATFORM_CFLAGS = -std=gnu99 -g -Wall -Wextra -O0 -lCpuManager
+PLATFORM_CFLAGS = -std=gnu99 -g -Wall -Wextra -O0 -lRuntimeLoader
 
 PLATFORM_INCOBJ = $(patsubst %.c,%.o,$(PLATFORM_SRCINC))
 PLATFORM_EXE = $(patsubst %.c,%,$(PLATFORM_SRC))

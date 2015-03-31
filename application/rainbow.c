@@ -22,11 +22,9 @@
 
 #include "../dvi-mem.h"
 
-void setPixel(unsigned char* vmem, unsigned short x, unsigned short y, unsigned char r, unsigned char g, unsigned char b) {
-  unsigned char* pixel = vmem + (DVI_VMEM_SCANLINE_BYTES*y + x*DVI_VMEM_BYTES_PER_PIXEL);
-  pixel[1] = r>>2;
-  pixel[2] = g>>2;
-  pixel[3] = b>>2;
+inline void setPixel(unsigned char* vmem, unsigned short x, unsigned short y, unsigned char r, unsigned char g, unsigned char b) {
+  unsigned int* pixel = (unsigned int*)(vmem + (DVI_VMEM_SCANLINE_BYTES*y + x*DVI_VMEM_BYTES_PER_PIXEL));
+  *pixel = (r << 16) | (g << 8) | b;
 }
 
 typedef enum state_e { redUp, redDown, greenUp, greenDown, blueUp, blueDown } state_e;
@@ -107,7 +105,7 @@ int main() {
       rainbowState3 = rainbowState2;
       for( unsigned short x = 0; x < 640; x+=1 ) {
         //setPixel(vmem, x, y, r3, g3, b3);
-        *((unsigned int*)(vmem + (DVI_VMEM_SCANLINE_BYTES*y + x*DVI_VMEM_BYTES_PER_PIXEL))) = (b3 >> 2 | g3 << 6 | r3 << 14) & 0x007F7F7F;
+        *((unsigned int*)(vmem + (DVI_VMEM_SCANLINE_BYTES*y + x*DVI_VMEM_BYTES_PER_PIXEL))) = (b3 | g3 << 8 | r3 << 16) & 0x00FDFDFD;
         advanceRainbow(&rainbowState3, &r3, &g3, &b3);
       }
     }

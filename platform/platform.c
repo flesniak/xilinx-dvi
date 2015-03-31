@@ -24,6 +24,7 @@ static struct optionsS {
 void usage( char* argv0 ) {
   fprintf( stderr, "Usage: %s [-v] [-t simple|count|regs] [-m memsize|-d] [-i instructions] <program.elf>\n", argv0 );
   fprintf( stderr, "  -v                   | increase verbosity (1 -> OVP stats, 2 -> stack analysis debug\n" );
+  fprintf( stderr, "  -e                   | do not catch processor exceptions\n" );
   fprintf( stderr, "  -t simple|count|regs | enable instruction tracing, with instruction cound or register dump\n" );
   fprintf( stderr, "  -m memsize           | attach a memory of size memsize instead of the implicite one\n" );
   fprintf( stderr, "  -i instructions      | simulate instructions at once (default 100000)\n" );
@@ -37,10 +38,13 @@ void parseOptions( int argc, char** argv ) {
   int c;
   opterr = 0;
 
-  while( ( c = getopt( argc, argv, "vt:m:i:w:d:" ) ) != -1 )
+  while( ( c = getopt( argc, argv, "vet:m:i:w:d:" ) ) != -1 )
     switch( c ) {
       case 'v':
         options.verbosity++;
+        break;
+      case 'e':
+        options.processorAttributes |= ICM_ATTR_SIMEX;
         break;
       case 't':
         if( !strcmp( optarg, "simple" ) ) {
@@ -122,8 +126,11 @@ int main( int argc, char** argv ) {
 
   icmAttrListP userAttrs = icmNewAttrList();
   icmAddDoubleAttr(userAttrs, "mips", 800.0);
+  icmAddStringAttr(userAttrs, "variant", "V8_20");
+  //icmAddStringAttr(userAttrs, "endian", "big"); //or1k toolchain does not seem to support little endian
   //icmAddUns32Attr(userAttrs, "C_ENDIANNESS", 0); //microblaze is big-endian by default
-  //icmAddStringAttr(userAttrs, "endian", "little"); //or1k toolchain does not seem to support little endian
+  icmAddUns32Attr(userAttrs, "C_USE_BARREL", 1);
+  icmAddUns32Attr(userAttrs, "C_UNALIGNED_EXCEPTIONS", 1);
 
   icmProcessorP processor1 = icmNewProcessor(
       "cpu1",             // CPU name
