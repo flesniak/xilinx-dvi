@@ -242,7 +242,7 @@ static VMIOS_CONSTRUCTOR_FN(constructor) {
   object->frames = 0;
 }
 
-static VMIOS_CONSTRUCTOR_FN(destructor) {
+static VMIOS_DESTRUCTOR_FN(destructor) {
   vmiMessage("I" ,"TFT_SH", "Shutting down");
   object->redrawThreadState = 2; //set stop condition
   pthread_join(object->redrawThread, 0);
