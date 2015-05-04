@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+ <peripheral constructor="constructor"
+    destructor="destructor"
+    imagefile="pse.pse"
+    library="peripheral"
+    name="xps_tft"
+    vendor="itiv.kit.edu"
+    version="1.0">
+    <docsection name="doc"
+        text="Licensing">
+        <doctext name="txt"
+            text="Open Source Apache 2.0"/>
+    </docsection>
+    <docsection name="doc_1"
+        text="Description">
+        <doctext name="txt"
+            text="Xilinx XPS TFT Controller"/>
+    </docsection>
+    <busslaveport addresswidth="32"
+        mustbeconnected="T"
+        name="BUS0"
+        size="0x10">
+        <addressblock name="AB0"
+            size="0x10"
+            width="32">
+            <memorymappedregister access="rw"
+                isvolatile="T"
+                name="AR"
+                readfunction="readReg"
+                userdata="0x0"
+                width="32"
+                writefunction="writeReg">
+                <field access="rw"
+                    bitoffset="20"
+                    name="BASEADDR"
+                    width="11">
+                    <docsection name="doc"
+                        text="Description">
+                        <doctext name="txt"
+                            text="Base address of video memory on 2MB boundary"/>
+                    </docsection>
+                </field>
+                <field bitoffset="0"
+                    name="__pad0"
+                    width="20"/>
+            </memorymappedregister>
+            <memorymappedregister access="rw"
+                isvolatile="T"
+                name="CR"
+                offset="0x4"
+                readfunction="readReg"
+                userdata="0x1"
+                width="32"
+                writefunction="writeReg">
+                <field access="rw"
+                    name="TDE"
+                    width="1">
+                    <docsection name="doc"
+                        text="Description">
+                        <doctext name="txt"
+                            text="TFT Display Enable"/>
+                    </docsection>
+                </field>
+                <field access="rw"
+                    bitoffset="1"
+                    name="DPS"
+                    width="1">
+                    <docsection name="doc"
+                        text="Description">
+                        <doctext name="txt"
+                            text="Display Scan Control"/>
+                    </docsection>
+                </field>
+            </memorymappedregister>
+            <memorymappedregister access="rw"
+                isvolatile="T"
+                name="IESR"
+                offset="0x8"
+                readfunction="readReg"
+                userdata="0x2"
+                width="32"
+                writefunction="writeReg">
+                <field access="rw"
+                    name="ST"
+                    width="1">
+                    <docsection name="doc"
+                        text="Description">
+                        <doctext name="txt"
+                            text="Vsync and address latch status"/>
+                    </docsection>
+                </field>
+                <field access="rw"
+                    bitoffset="3"
+                    name="IE"
+                    width="1">
+                    <docsection name="doc"
+                        text="Description">
+                        <doctext name="txt"
+                            text="Vsync interrupt enable"/>
+                    </docsection>
+                </field>
+                <field bitoffset="1"
+                    name="__pad1"
+                    width="2"/>
+            </memorymappedregister>
+            <memorymappedregister access="rw"
+                isvolatile="T"
+                name="CCR"
+                offset="0xc"
+                readfunction="readReg"
+                userdata="0x3"
+                width="32"
+                writefunction="writeReg">
+                <field access="rw"
+                    name="CD"
+                    width="8">
+                    <docsection name="doc"
+                        text="Description">
+                        <doctext name="txt"
+                            text="Chrontel chip register data"/>
+                    </docsection>
+                </field>
+                <field access="rw"
+                    bitoffset="8"
+                    name="CA"
+                    width="8">
+                    <docsection name="doc"
+                        text="Description">
+                        <doctext name="txt"
+                            text="Chrontel chip register address"/>
+                    </docsection>
+                </field>
+                <field access="rw"
+                    bitoffset="31"
+                    name="ST"
+                    width="1">
+                    <docsection name="doc"
+                        text="Description">
+                        <doctext name="txt"
+                            text="Start transmission"/>
+                    </docsection>
+                </field>
+                <field bitoffset="16"
+                    name="__pad16"
+                    width="15"/>
+            </memorymappedregister>
+        </addressblock>
+    </busslaveport>
+    <netport name="VSYNCINT"
+        type="output"
+        updatefunctionargument="0"/>
+    <busslaveport addresswidth="32"
+        mustbeconnected="T"
+        name="VMEMBUS"
+        remappable="T"
+        size="0x400000">
+        <docsection name="doc"
+            text="Description">
+            <doctext name="txt"
+                text="Video memory, sized 2MB"/>
+        </docsection>
+    </busslaveport>
+    <formalattribute name="bigEndianGuest"
+        type="bool"/>
+    <formalattribute name="output"
+        type="uns32"/>
+    <formalattribute name="polledRedraw"
+        type="uns32"/>
+    <fileversion major="1"
+        minor="0"
+        name="_version_0"/>
+ </peripheral>

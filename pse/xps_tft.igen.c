@@ -3,18 +3,10 @@
 //
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
-//                             Version 20131018.0
-//                          Thu Aug 21 18:02:43 2014
+//                             Version 20150205.0
+//                          Mon May  4 12:16:44 2015
 //
 ////////////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////////// Licensing //////////////////////////////////
-
-// Open Source Apache 2.0
-
-////////////////////////////////// Description /////////////////////////////////
-
-// Xilinx XPS TFT Controller
 
 
 #include "xps_tft.igen.h"
@@ -27,8 +19,8 @@ handlesT handles;
 /////////////////////////////// Diagnostic level ///////////////////////////////
 
 // Test this variable to determine what diagnostics to output.
-// eg. if (diagnosticLevel > 0) bhmMessage("I", "xps_tft", "Example");
-
+// eg. if (diagnosticLevel >= 1) bhmMessage("I", "xps_tft", "Example");
+//     Predefined macros PSE_DIAG_LOW, PSE_DIAG_MEDIUM and PSE_DIAG_HIGH may be used
 Uns32 diagnosticLevel;
 
 /////////////////////////// Diagnostic level callback //////////////////////////
@@ -70,7 +62,7 @@ static void installSlavePorts(void) {
 
 static void installRegisters(void) {
 
-    ppmCreateRegister("AR",
+    ppmCreateRegister("AB0_AR",
         0,
         handles.BUS0,
         0,
@@ -81,7 +73,7 @@ static void installRegisters(void) {
         (void*)0x0,
         True
     );
-    ppmCreateRegister("CR",
+    ppmCreateRegister("AB0_CR",
         0,
         handles.BUS0,
         4,
@@ -92,7 +84,7 @@ static void installRegisters(void) {
         (void*)0x1,
         True
     );
-    ppmCreateRegister("IESR",
+    ppmCreateRegister("AB0_IESR",
         0,
         handles.BUS0,
         8,
@@ -103,7 +95,7 @@ static void installRegisters(void) {
         (void*)0x2,
         True
     );
-    ppmCreateRegister("CCR",
+    ppmCreateRegister("AB0_CCR",
         0,
         handles.BUS0,
         12,
@@ -138,6 +130,12 @@ PPM_CONSTRUCTOR_CB(periphConstructor) {
 ///////////////////////////////////// Main /////////////////////////////////////
 
 int main(int argc, char *argv[]) {
+
+    ppmDocNodeP doc1_node = ppmDocAddSection(0, "Licensing");
+    ppmDocAddText(doc1_node, "Open Source Apache 2.0");
+    ppmDocNodeP doc_11_node = ppmDocAddSection(0, "Description");
+    ppmDocAddText(doc_11_node, "Xilinx XPS TFT Controller");
+
     diagnosticLevel = 0;
     bhmInstallDiagCB(setDiagLevel);
     constructor();

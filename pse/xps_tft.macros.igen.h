@@ -3,21 +3,13 @@
 //
 //                W R I T T E N   B Y   I M P E R A S   I G E N
 //
-//                             Version 20131018.0
-//                          Thu Aug 21 18:02:43 2014
+//                             Version 20150205.0
+//                          Mon May  4 12:16:44 2015
 //
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef XPS_TFT_MACROS_IGEN_H
 #define XPS_TFT_MACROS_IGEN_H
-/////////////////////////////////// Licensing //////////////////////////////////
-
-// Open Source Apache 2.0
-
-////////////////////////////////// Description /////////////////////////////////
-
-// Xilinx XPS TFT Controller
-
 // Before including this file in the application, define the indicated macros
 // to fix the base address of each slave port.
 // Set the macro 'BUS0' to the base of port 'BUS0'
