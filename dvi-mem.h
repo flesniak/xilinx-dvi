@@ -18,9 +18,9 @@
 #define DVI_VMEM_BITS_PER_PIXEL         (DVI_VMEM_BYTES_PER_PIXEL*8)
 #define DVI_VMEM_SCANLINE_BYTES         (DVI_VMEM_WIDTH*DVI_VMEM_BYTES_PER_PIXEL)
 #define DVI_VMEM_SIZE                   (DVI_VMEM_SCANLINE_BYTES*DVI_VMEM_HEIGHT) //1024x576 pixels 32bpp 0xggbbrraa (notation in little endian)
-#define DVI_VMEM_RMASK                  0x0000fc00 //these color masks match on semihost-side, i.e. little-endian
-#define DVI_VMEM_GMASK                  0x00fc0000 //based systems. when working in applications on big-endian
-#define DVI_VMEM_BMASK                  0xfc000000 //processors, these masks have to be inverted.
+#define DVI_VMEM_RMASK                  0x0000fc00 //these color masks match on semihost-side (little-endian) when using
+#define DVI_VMEM_GMASK                  0x00fc0000 //a big-endian guest processor. Remember to invert these masks on big-endian guests,
+#define DVI_VMEM_BMASK                  0xfc000000 //and remember to set the bigEndianGuest parameter.
 
 //despite the framebuffer itself is bigger, we only use/process the 640x480 portion of it (parameters like BPP and masks are same as above)
 #define DVI_OUTPUT_WIDTH                1024

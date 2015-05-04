@@ -1,10 +1,10 @@
 #include "dlo.h"
 #include "../dvi-mem.h"
 
-#include <vmi/vmiMessage.h>
 #include <byteswap.h>
+#include <vmi/vmiMessage.h>
 
-void dloInit(dloObject* object, unsigned char* framebuffer) {
+void dloInit(dloObject* object, unsigned char* framebuffer, bool bigEndian) {
   vmiMessage("I", "TFT_SH", "Initializing DLO output module");
 
   dlo_init_t initFlags;
@@ -38,6 +38,7 @@ void dloInit(dloObject* object, unsigned char* framebuffer) {
 
   object->framebuffer = (uint32_t*)framebuffer;
   object->scanDirection = DVI_SCAN_TOP_BOTTOM;
+  object->bigEndian = bigEndian;
 }
 
 void dloFinish(dloObject* object) {
@@ -75,6 +76,9 @@ void dloConvertPixels(dloObject* object) {
         dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*(DVI_OUTPUT_HEIGHT-y)-x-1;
       else
         dstPixel = ((uint32_t*)object->fbuf.base)+DVI_OUTPUT_WIDTH*y+x;
-      *dstPixel = bswap_32(*srcPixel);
+      if( object->bigEndian )
+        *dstPixel = bswap_32(*srcPixel);
+      else
+        *dstPixel = *srcPixel;
     }
 }

@@ -4,3 +4,9 @@ obj
 *.exe
 *.elf
 *.pse
+platform/platform
+pse/xps_tft.attrs.igen.c
+pse/xps_tft.igen.c
+pse/xps_tft.igen.h
+pse/xps_tft.igen.stubs
+pse/xps_tft.macros.igen.h
