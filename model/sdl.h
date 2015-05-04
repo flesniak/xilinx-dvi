@@ -2,6 +2,7 @@
 #define SDL_H
 
 #include <SDL.h>
+#include <stdbool.h>
 
 typedef struct sdlObjectS {
   SDL_Surface* surface;
@@ -9,7 +10,7 @@ typedef struct sdlObjectS {
   int scanDirection;
 } sdlObject;
 
-void sdlInit(sdlObject* object, unsigned char* framebuffer);
+void sdlInit(sdlObject* object, unsigned char* framebuffer, bool bigEndian);
 void sdlFinish(sdlObject* object);
 void sdlUpdate(sdlObject* object);
 void sdlConfigure(sdlObject* object, int scanDirection);

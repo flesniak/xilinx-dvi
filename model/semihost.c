@@ -157,12 +157,12 @@ static VMIOS_INTERCEPT_FN(initDisplay) {
   switch( object->outputModule ) {
     case sdl :
       object->sdl = calloc(1, sizeof(sdlObject));
-      sdlInit(object->sdl, object->framebuffer);
+      sdlInit(object->sdl, object->framebuffer, object->bigEndianGuest);
       break;
 #ifdef USE_DLO
     case dlo :
       object->dlo = calloc(1, sizeof(dloObject));
-      dloInit(object->dlo, object->framebuffer);
+      dloInit(object->dlo, object->framebuffer, object->bigEndianGuest);
       break;
 #endif //USE_DLO
     default :

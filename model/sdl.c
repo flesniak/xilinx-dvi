@@ -1,10 +1,11 @@
 #include "sdl.h"
 #include "../dvi-mem.h"
 
+#include <byteswap.h>
 #include <vmi/vmiMessage.h>
 #include <vmi/vmiRt.h>
 
-void sdlInit(sdlObject* object, unsigned char* framebuffer) {
+void sdlInit(sdlObject* object, unsigned char* framebuffer, bool bigEndian) {
   vmiMessage("I", "TFT_SH", "Initializing SDL output module");
   if( SDL_Init(SDL_INIT_VIDEO) )
     vmiMessage("F", "TFT_SH", "Couldn't initialize SDL: %s\n", SDL_GetError());
@@ -17,7 +18,11 @@ void sdlInit(sdlObject* object, unsigned char* framebuffer) {
   SDL_WM_SetCaption("OVP SDL output", 0);
 
   //create a surface matching the pixel format of the xilinx tft controller using the supplied framebuffer as pixel storage
-  object->tftSurface = SDL_CreateRGBSurfaceFrom(framebuffer, DVI_VMEM_WIDTH, DVI_VMEM_HEIGHT, DVI_VMEM_BITS_PER_PIXEL, DVI_VMEM_SCANLINE_BYTES, DVI_VMEM_RMASK, DVI_VMEM_GMASK, DVI_VMEM_BMASK, 0);
+  //depending on the endianess, swap the color masks
+  if( bigEndian )
+    object->tftSurface = SDL_CreateRGBSurfaceFrom(framebuffer, DVI_VMEM_WIDTH, DVI_VMEM_HEIGHT, DVI_VMEM_BITS_PER_PIXEL, DVI_VMEM_SCANLINE_BYTES, DVI_VMEM_RMASK, DVI_VMEM_GMASK, DVI_VMEM_BMASK, 0);
+  else
+    object->tftSurface = SDL_CreateRGBSurfaceFrom(framebuffer, DVI_VMEM_WIDTH, DVI_VMEM_HEIGHT, DVI_VMEM_BITS_PER_PIXEL, DVI_VMEM_SCANLINE_BYTES, bswap_32(DVI_VMEM_RMASK), bswap_32(DVI_VMEM_GMASK), bswap_32(DVI_VMEM_BMASK), 0);
   if( !object->tftSurface )
     vmiMessage("F", "TFT_SH", "Couldn't initialize tft surface: %s\n", SDL_GetError());
   SDL_FillRect(object->tftSurface, 0, SDL_MapRGB(object->tftSurface->format, 0, 0, 0));
