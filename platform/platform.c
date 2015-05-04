@@ -127,7 +127,7 @@ int main( int argc, char** argv ) {
   icmAttrListP userAttrs = icmNewAttrList();
   icmAddDoubleAttr(userAttrs, "mips", 800.0);
   icmAddStringAttr(userAttrs, "variant", "V8_20");
-  icmAddStringAttr(userAttrs, "endian", "big"); //or1k toolchain does not seem to support little endian
+  //icmAddStringAttr(userAttrs, "endian", "big"); //or1k toolchain does not seem to support little endian
   //icmAddUns32Attr(userAttrs, "C_ENDIANNESS", 0); //microblaze is big-endian by default
   icmAddUns32Attr(userAttrs, "C_USE_BARREL", 1);
   icmAddUns32Attr(userAttrs, "C_UNALIGNED_EXCEPTIONS", 1);
