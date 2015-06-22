@@ -5,7 +5,7 @@ include $(IMPERAS_HOME)/bin/Makefile.include
 
 SRC = semihost.c sdl.c #dlo.c
 LIB = model.so
-CFLAGS =  $(IMPERAS_VMIINC) -fPIC -I/usr/include/SDL -std=gnu99 -g -Wall -Werror -O2
+CFLAGS =  $(IMPERAS_VMIINC) -fPIC -I/usr/include/SDL -std=gnu99 -g -Wall -Werror -O2 -m32
 LDFLAGS = $(SIM_LDFLAGS) $(IMPERAS_VMISTUBS) -shared -lSDL -pthread
 
 ifeq ($(USE_DLO),1)
