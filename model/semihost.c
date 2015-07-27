@@ -112,11 +112,12 @@ static void* drawDisplayThread(void* objectV) {
 }
 
 memDomainP getSimulatedVmemDomain(vmiProcessorP processor, char* name) {
+  vmiMessage("I", "TFT_SH", "getSimulatedVmemDomain processor %p name %s", processor, name);
   Addr lo, hi;
   Bool isMaster, isDynamic;
-  memDomainP simDomain = vmipsePlatformPortAttributes(processor, DVI_VMEM_BUS_NAME, &lo, &hi, &isMaster, &isDynamic);
+  memDomainP simDomain = vmipsePlatformPortAttributes(processor, name, &lo, &hi, &isMaster, &isDynamic);
   if( !simDomain )
-    vmiMessage("F", "TFT_SH", "Failed to obtain %s platform port", DVI_VMEM_BUS_NAME);
+    vmiMessage("F", "TFT_SH", "Failed to obtain %s platform port", name);
   return simDomain;
 }
 
